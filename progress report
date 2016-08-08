@@ -1,0 +1,31 @@
+## Things we can implement ##
+
+Have the classifier gain the ability to train records which do not have the actual label, but only a label at a certain point
+in the hierarchy. 
+
+e.g. a rare spider species which only have 3 images dedicated to it. We dont discard it, 
+and train it across the entire spider family.
+-----
+Enable classification at any arbitrary point of the hierarchy
+
+----
+Allow to start classifying from a certain point of hierarchy - e.g. classify the object, given a prior point in the hierarchy
+
+----
+
+
+## Progress reports ##
+
+
+
+Created python file which multi-treadedly grabs image files off the specified link
+However, some files are massive, meaning we cannot store the million observations without taking up too much space.
+
+Thus we need to apply the transformations to each image as we download them.
+This will be done using OpenCV.
+
+We will only take the central 50% of the pixels into consideration, and we have to normalise all images such that they have 
+an equal size and aspect ratio.
+
+
+
