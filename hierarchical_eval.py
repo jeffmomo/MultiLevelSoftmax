@@ -65,5 +65,7 @@ print(
 
 
 # To get the top k probabilities, may need to perform djikstra/A* search through the hierarchy.
+# first we need to actually derive probabilities instead of just producing the top result
+
 
 

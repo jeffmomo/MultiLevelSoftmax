@@ -12,12 +12,25 @@ Enable classification at any arbitrary point of the hierarchy
 Allow to start classifying from a certain point of hierarchy - e.g. classify the object, given a prior point in the hierarchy
 
 ----
-
+Randomised ReLU?
+-----
+Produce actual probabilities? Maybe not possible
+----
 
 ## Progress reports ##
 
 
+-----ongoing-----
 
+ZCA Whiten image after subtracting mean
+
+
+
+figuring out the input data structure
+finding way to include the hierarchical training into it
+
+
+-----done----
 Created python file which multi-treadedly grabs image files off the specified link
 However, some files are massive, meaning we cannot store the million observations without taking up too much space.
 
