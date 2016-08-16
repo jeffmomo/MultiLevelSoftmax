@@ -14,7 +14,9 @@ Allow to start classifying from a certain point of hierarchy - e.g. classify the
 ----
 Randomised ReLU?
 -----
-Produce actual probabilities? Maybe not possible
+Produce actual probabilities?
+
+Maybe produce all "probabilities" for all leaf nodes, sum them, and use current "probability" divide by that.
 ----
 
 ## Progress reports ##
