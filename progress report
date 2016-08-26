@@ -9,6 +9,9 @@ and train it across the entire spider family.
 Enable classification at any arbitrary point of the hierarchy
 
 ----
+
+Use advanced input augmentation?
+---
 Allow to start classifying from a certain point of hierarchy - e.g. classify the object, given a prior point in the hierarchy
 
 ----
@@ -26,7 +29,7 @@ Maybe produce all "probabilities" for all leaf nodes, sum them, and use current 
 
 ZCA Whiten image after subtracting mean
 
-
+Derive hierarchy from data.
 
 figuring out the input data structure
 finding way to include the hierarchical training into it

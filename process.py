@@ -1,20 +1,23 @@
-import uuid
+import csv
 import threading
 import requests
 import os.path
 import math
 import cv2
 import numpy as np
-import hashlib
+import base64
 
 f = open('observations.csv', 'r')
 imgs = open('images.csv', 'r')
 out = open('output.csv', 'w')
 
-written = open('notwritten.txt', 'w+')
-written_links = []
+written = open('notwritten.txt', 'a+')
+written.seek(0)
+
+written_links = set()
 for line in written:
-    written_links.append(line)
+    # gets rid of \n
+    written_links.add(line[:-1])
 
 
 def get_factors(width, height):
@@ -52,18 +55,25 @@ def crop(orig_width, orig_height, factor, img):
         return img[starty:scaled_height, startx:scaled_width]
 
 
-def genId(link):
-    return str(hashlib.sha224(link).hexdigest())
+def gen_id(link):
+    return base64.urlsafe_b64encode(link.encode('utf-8')).decode('utf-8')
 
 
-def writeFile(name, content_type, link):
-    filetype, extension = content_type.split("/")
+def write_file(name, content_type, link):
+    
+    ctype = content_type.split("/")
+    if len(ctype) < 2:
+        print('strange content type ' + content_type)
+        return False
+
+    filetype, extension = ctype
 
     if link in written_links:
-        return False
+        return True
 
     if filetype == "image":
         res = requests.get(link)
+
         if res.status_code == 200:
             path = os.path.join("./images", name + "." + extension)
 
@@ -71,8 +81,19 @@ def writeFile(name, content_type, link):
             targety = 256
 
             img_bytes = np.fromstring(res.content, np.uint8)
-            testimg = cv2.imdecode(img_bytes, 1)
+
+            testimg = None
+            try:
+                testimg = cv2.imdecode(img_bytes, 1)
+            except Exception:
+                pass
+
+            if testimg is None:
+                print("image not decodable")
+                return False
+
             testimg = crop_square(testimg)
+
             height, width, _ = testimg.shape
             scaled = cv2.resize(testimg, None, fx=targetx / width, fy=targety / height, interpolation=cv2.INTER_LANCZOS4)
 
@@ -81,26 +102,29 @@ def writeFile(name, content_type, link):
 
             return True
         else:
-            print("not written " + link + "\n")
+            print(" request unsuccessful " + link + "\n")
 
     else:
-        print(name + "|" + link + "\n")
-        print("not image found")
+        print(filetype + " " + link + "\n")
+        print("type is not image")
 
     return False
 
 hashmap = {}
 links = []
 
-for line in f:
-    id, *rest = line.split(',')
-    hashmap[id] = line[:-1]
+csv_obs = csv.reader(f, delimiter=',', quotechar='"')
+csv_imgs = csv.reader(imgs, delimiter=',', quotechar='"')
 
-for line in imgs:
-    id, type, content_type, link, *rest = line.split(',')
+for line in csv_obs:
+    id, *rest = line
+    hashmap[id] = line
+
+for line in csv_imgs:
+    id, type, content_type, link, *rest = line
     if id in hashmap:
-        ident = genId(link)
-        out.write(hashmap[id] + '|_|' + ','.join([type, content_type, ident]) + '\n')
+        ident = gen_id(link)
+        out.write('_._'.join(hashmap[id]) + '|_|' + '_._'.join([type, content_type, ident]) + '\n')
         links.append((link, ident, content_type))
 
 lock = threading.Lock()
@@ -114,10 +138,10 @@ def downloadOne():
             break
         link, id, content_type = links.pop()
         lock.release()
-        writeFile(id, content_type, link)
-        plock.acquire()
-        print(link, id)
-        plock.release()
+        if not write_file(id, content_type, link):
+            plock.acquire()
+            print(link, id)
+            plock.release()
 
     lock.release()
 
