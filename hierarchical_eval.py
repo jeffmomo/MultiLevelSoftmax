@@ -1,7 +1,12 @@
 from functools import reduce
 
 
+
+
+
 class Layer:
+
+
     def __init__(self, elems):
         self.elems = elems
 
@@ -43,18 +48,17 @@ class Layer:
     # return mapped[0].getChildren[0]
 
 
-# print(Layer([Layer([2, 3, 4]), Layer([1,3,5])]).evaluate([1,2,3,4,4,6]))
+print(Layer([Layer([2, 3, 4]), Layer([1,0,5])]).evaluate([1,2,3,4,5,6]))
 
 print(
     Layer([
-
         Layer([
             Layer([2, 0]),
-            Layer([4])]),
-
+            Layer([4])
+        ]),
         Layer([1, 3, 5])
-
-    ]).evaluateWithPrior([0, 0], [1, 2, 3, 4, 4, 6]))
+    ])
+    .evaluateWithPrior([0, 0], [1, 2, 3, 4, 4, 6]))
 
 # .evaluate([1,2,3,4,4,6]))
 
