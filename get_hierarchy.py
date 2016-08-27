@@ -14,6 +14,9 @@ class TaxonomyTree(object):
 
     def backwards(self, current_significance, k, output, returned_from):
 
+        if self.index != -1:
+            output[self.index] = current_significance
+
         for _, v in self.subtrees.items():
             if v.name == returned_from:
                 continue
@@ -26,7 +29,14 @@ class TaxonomyTree(object):
     def forwards(self, max_significance, chain, k, size):
         if not len(chain):
             output = [0] * size
-            output[self.index] = max_significance # may need to account for additional shit added on.
+
+            # children = self.children()
+            # if not len(children):
+            #     output[self.index] = max_significance # may need to account for additional shit added on.
+            # else:
+            #     for child in children:
+            #         output[child.index] = max_significance
+
             return self.backwards(max_significance, k, output, self.name)
 
         head, *rest = chain
@@ -55,16 +65,14 @@ class TaxonomyTree(object):
         return self.subtrees[branch_name]
 
     def create_chain(self, chain):
-
         if not len(chain):
             return
 
-        branch = chain[0]
-
-        if branch in self.subtrees:
-            self.subtrees[branch].create_chain(chain[1:])
+        head, *tail = chain
+        if head in self.subtrees:
+            self.subtrees[head].create_chain(tail)
         else:
-            self.create_if_not_contain(branch).create_chain(chain[1:])
+            self.create_if_not_contain(head).create_chain(tail)
 
     def assign_indices(self, definitions):
         if not len(self.subtrees):
@@ -118,11 +126,12 @@ def test():
 
     tt.build(['a', 'b', 'c', 'd', 'e'])
 
-    fw = tt.generate_targets(1, [ 'ab', 'b'], 0.5)
+    fw = tt.generate_targets(1, ['cc', 'c'], 0.5)
     print(fw)
 
-    # lr = tt.generate_layer()
-    # print(lr.evaluate([1,2,3,4,5,6]))
+    lr = tt.generate_layer()
+    print(lr.evaluate([0.2, 0.4, 0.4, 0.1, 0.5]))
+
 
 def generate_tree():
 

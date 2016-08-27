@@ -13,13 +13,13 @@ Enable classification at any arbitrary point of the hierarchy
 Use advanced input augmentation?
 ---
 Allow to start classifying from a certain point of hierarchy - e.g. classify the object, given a prior point in the hierarchy
-
 ----
 Randomised ReLU?
 -----
 Produce actual probabilities?
 
 Maybe produce all "probabilities" for all leaf nodes, sum them, and use current "probability" divide by that.
+this is probably not possible
 ----
 
 ## Progress reports ##
@@ -27,15 +27,22 @@ Maybe produce all "probabilities" for all leaf nodes, sum them, and use current 
 
 -----ongoing-----
 
-ZCA Whiten image after subtracting mean
-
-Derive hierarchy from data.
-
-figuring out the input data structure
-finding way to include the hierarchical training into it
+ZCA Whiten images after subtracting mean
+Input augmentations
+training basic model through wide-res-nets
 
 
 -----done----
+
+
+Can generate target training vectors using the structure with hierarchical hints
+
+Able to use that hierarchy to build structured layers which we can hierarchically evaluate off
+
+Finished creating hierarchy from observations
+
+Grabbed 500K images so far
+
 Created python file which multi-treadedly grabs image files off the specified link
 However, some files are massive, meaning we cannot store the million observations without taking up too much space.
 

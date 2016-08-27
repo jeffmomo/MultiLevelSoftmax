@@ -1,9 +1,5 @@
 from functools import reduce
 
-
-
-
-
 class Layer:
 
 
@@ -42,10 +38,7 @@ class Layer:
 
         mapped = sorted([(x.avg(output), x) for x in self.elems], key=lambda x: -x[0])
 
-        # if mapped[0][1] != None:
         return mapped[0][1].evaluate(output)
-
-    # return mapped[0].getChildren[0]
 
 
 print(Layer([Layer([2, 3, 4]), Layer([1,0,5])]).evaluate([1,2,3,4,5,6]))
@@ -65,11 +58,6 @@ print(
 
 # print(Layer([Layer([1,2]), Layer([3, 4])]).evaluate([0, 3, 3.1, 4, 1]))
 
-
-
-
-# To get the top k probabilities, may need to perform djikstra/A* search through the hierarchy.
-# first we need to actually derive probabilities instead of just producing the top result
 
 
 
