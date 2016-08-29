@@ -29,14 +29,6 @@ class TaxonomyTree(object):
     def forwards(self, max_significance, chain, k, size):
         if not len(chain):
             output = [0] * size
-
-            # children = self.children()
-            # if not len(children):
-            #     output[self.index] = max_significance # may need to account for additional shit added on.
-            # else:
-            #     for child in children:
-            #         output[child.index] = max_significance
-
             return self.backwards(max_significance, k, output, self.name)
 
         head, *rest = chain
@@ -48,12 +40,13 @@ class TaxonomyTree(object):
     def generate_targets(self, max_significance, chain, k):
         return self.forwards(max_significance, chain, k, self.size)
 
-
     def __init__(self, name):
+
         self.subtrees = dict()
         self.name = name
         self.index = -1
         self.size = 0
+        self.count_at_node = 0
 
     def create_if_not_contain(self, branch_name):
 
@@ -65,6 +58,9 @@ class TaxonomyTree(object):
         return self.subtrees[branch_name]
 
     def create_chain(self, chain):
+
+        self.count_at_node += 1
+
         if not len(chain):
             return
 
@@ -97,17 +93,21 @@ class TaxonomyTree(object):
         else:
             return [x.get_list() for _, x in self.subtrees.items()]
 
-    def generate_layer(self):
+    def generate_layer(self, mapping):
         if not len(self.subtrees):
             return self.index
         else:
-            lst = [v.generate_layer() for k, v in self.subtrees.items()]
-            return hierarchical_eval.Layer(lst)
-            # if type(lst[0]) == hierarchical_eval.Layer:
-            #     return hierarchical_eval.Layer(lst)
-            # else:
-            #     return lst
+            lst = []
+            idx = 0
 
+            # Precondition - all members of hierarchy
+            # (either leaves or non-leaves) must have different name
+            for k, v in self.subtrees.items():
+                lst.append(v.generate_layer(mapping))
+                mapping[v.name] = idx
+                idx += 1
+
+            return hierarchical_eval.Layer(lst)
 
     def __str__(self):
         return self.name
@@ -115,10 +115,11 @@ class TaxonomyTree(object):
 
 def test():
     tt = TaxonomyTree('init')
-    tt.create_chain([ 'ab', 'a'])
-    tt.create_chain([ 'ab', 'b'])
+
+    tt.create_chain(['ab', 'a'])
+    tt.create_chain(['ab', 'b'])
     tt.create_chain(['cc', 'c'])
-    tt.create_chain([ 'de', 'd'])
+    tt.create_chain(['de', 'd'])
     tt.create_chain(['de', 'e'])
     # tt.create_chain(['a', 'f', 'i'])
 
@@ -129,8 +130,13 @@ def test():
     fw = tt.generate_targets(1, ['cc', 'c'], 0.5)
     print(fw)
 
-    lr = tt.generate_layer()
-    print(lr.evaluate([0.2, 0.4, 0.4, 0.1, 0.5]))
+    mapping = {}
+    lr = tt.generate_layer(mapping)
+    print(lr.evaluateWithPrior(get_chain_by_name(['de'], mapping), [0.2, 0.4, 0.4, 0.1, 0.5]))
+
+
+def get_chain_by_name(chain, mapping):
+    return [mapping[x] for x in chain]
 
 
 def generate_tree():

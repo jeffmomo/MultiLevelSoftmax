@@ -1,7 +1,7 @@
 from functools import reduce
 
-class Layer:
 
+class Layer:
 
     def __init__(self, elems):
         self.elems = elems
