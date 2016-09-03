@@ -127,27 +127,59 @@ for line in csv_imgs:
         out.write('_._'.join(hashmap[id]) + '|_|' + '_._'.join([type, content_type, ident]) + '\n')
         links.append((link, ident, content_type))
 
+
+MAX_THREADS = 50
 lock = threading.Lock()
 plock = threading.Lock()
+semaphore = threading.BoundedSemaphore(MAX_THREADS)
 
 
 def downloadOne():
+    semaphore.acquire()
     while True:
         lock.acquire()
         if not len(links):
             break
         link, id, content_type = links.pop()
         lock.release()
-        if not write_file(id, content_type, link):
+
+        success = False
+        try:
+            success = write_file(id, content_type, link)
+        except Exception as ex:
+            semaphore.release()
+            return
+
+        if not success:
             plock.acquire()
             print(link, id)
             plock.release()
 
     lock.release()
+    semaphore.release()
 
 
-for i in [threading.Thread(target=downloadOne) for t in range(0, 20)]:
-    i.start()
+def monitor_threads():
+    while True:
+        lock.acquire()
+        if not len(links):
+            plock.acquire()
+            print('FINISHING>>>>>>>>>>>>>>>>>>>>')
+            plock.release()
+            break
+        lock.release()
+
+        semaphore.acquire()
+        plock.acquire()
+        print('Starting thread')
+        plock.release()
+        threading.Thread(target=downloadOne).start()
+        semaphore.release()
+
+# for i in [threading.Thread(target=downloadOne) for t in range(0, MAX_THREADS)]:
+#     i.start()
+
+threading.Thread(target=monitor_threads).start()
 
 out.close()
 f.close()

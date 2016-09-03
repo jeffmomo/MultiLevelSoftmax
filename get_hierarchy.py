@@ -2,6 +2,8 @@ import csv
 import pickle
 import hierarchical_eval
 import functools
+from typing import List, Dict
+from collections import deque
 
 
 class TaxonomyTree(object):
@@ -12,7 +14,7 @@ class TaxonomyTree(object):
         else:
             return functools.reduce(list.__add__, [x.children() for _, x in self.subtrees.items()])
 
-    def backwards(self, current_significance, k, output, returned_from):
+    def backwards(self, current_significance: float, k: float, output: List[float], returned_from: str) -> (float, float, list, str):
 
         if self.index != -1:
             output[self.index] = current_significance
@@ -26,7 +28,7 @@ class TaxonomyTree(object):
 
         return current_significance * k, k, output, self.name
 
-    def forwards(self, max_significance, chain, k, size):
+    def forwards(self, max_significance: float, chain: List[str], k: float, size: int) -> (float, float, list, str):
         if not len(chain):
             output = [0] * size
             return self.backwards(max_significance, k, output, self.name)
@@ -37,7 +39,7 @@ class TaxonomyTree(object):
 
         return self.backwards(current_significance, k, output, name)
 
-    def generate_targets(self, max_significance, chain, k):
+    def generate_targets(self, max_significance: float, chain: List[str], k: float) -> (float, float, list, str):
         return self.forwards(max_significance, chain, k, self.size)
 
     def __init__(self, name):
@@ -57,7 +59,7 @@ class TaxonomyTree(object):
 
         return self.subtrees[branch_name]
 
-    def create_chain(self, chain):
+    def create_chain(self, chain: List[str]) -> None:
 
         self.count_at_node += 1
 
@@ -70,20 +72,20 @@ class TaxonomyTree(object):
         else:
             self.create_if_not_contain(head).create_chain(tail)
 
-    def assign_indices(self, definitions):
+    def assign_indices(self, definitions: List[str]) -> None:
         if not len(self.subtrees):
             self.index = definitions.index(self.name)  # assigns index by name
         else:
             for k, v in self.subtrees.items():
                 v.assign_indices(definitions)
 
-    def get_size(self):
+    def get_size(self) -> int:
         if not len(self.subtrees):
             return 1
         else:
             return functools.reduce(int.__add__, [x.get_size() for _, x in self.subtrees.items()])
 
-    def build(self, definitions):
+    def build(self, definitions: List[str]) -> None:
         self.assign_indices(definitions)
         self.size = self.get_size()
 
@@ -93,7 +95,7 @@ class TaxonomyTree(object):
         else:
             return [x.get_list() for _, x in self.subtrees.items()]
 
-    def generate_layer(self, mapping):
+    def generate_layer(self, mapping: Dict[str, int]) -> hierarchical_eval.Layer:
         if not len(self.subtrees):
             return self.index
         else:
@@ -104,7 +106,10 @@ class TaxonomyTree(object):
             # (either leaves or non-leaves) must have different name
             for k, v in self.subtrees.items():
                 lst.append(v.generate_layer(mapping))
-                mapping[v.name] = idx
+                compound = self.name + '.' + k
+                if compound in mapping:
+                    print('Duplicate naming: ' + compound)
+                mapping[compound] = idx
                 idx += 1
 
             return hierarchical_eval.Layer(lst)
@@ -112,6 +117,41 @@ class TaxonomyTree(object):
     def __str__(self):
         return self.name
 
+    def bf_count(self):
+        current_count = 0
+        done_count = 0
+        total_count = 0
+        queue = deque()
+        for k, v in self.subtrees.items():
+            queue.append(v)
+            total_count += 1
+
+        done_count = total_count
+
+        out_str = ''
+
+        while len(queue):
+
+            if current_count == done_count:
+                print(out_str + '\n\n')
+                out_str = ''
+                done_count = total_count
+
+            head = queue.popleft()
+            out_str += head.name + ': ' + str(head.count_at_node) + ', '
+            current_count += 1
+
+            for k, v in head.subtrees.items():
+                queue.append(v)
+                total_count += 1
+
+        print(out_str)
+
+
+
+
+# def process():
+#
 
 def test():
     tt = TaxonomyTree('init')
@@ -133,6 +173,8 @@ def test():
     mapping = {}
     lr = tt.generate_layer(mapping)
     print(lr.evaluateWithPrior(get_chain_by_name(['de'], mapping), [0.2, 0.4, 0.4, 0.1, 0.5]))
+
+    tt.bf_count()
 
 
 def get_chain_by_name(chain, mapping):
@@ -159,11 +201,15 @@ def generate_tree():
         else:
             species = duo[0]
         t.create_chain([kingdom, phylum, cls, order, family, genus, species])
+
         count += 1
-        print(species + ' added')
-        print(count)
+        # print(species + ' added')
+        # print(count)
+    # print(t.get_list())
+    t.generate_layer({})
+    print(t.bf_count())
+    # pickle.dump(t, open('hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
 
-    pickle.dump(t, open('hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
 
-
-test()
+# test()
+generate_tree()

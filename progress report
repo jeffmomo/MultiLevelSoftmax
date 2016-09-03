@@ -33,6 +33,7 @@ training basic model through wide-res-nets
 
 -----done----
 
+Can transform string-based hierarchy chains into index-based hierarchy chains for use in the Layer structure
 
 Can generate target training vectors using the structure with hierarchical hints
 
