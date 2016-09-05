@@ -27,6 +27,8 @@ this is probably not possible
 
 -----ongoing-----
 
+Using tensorflow
+
 ZCA Whiten images after subtracting mean
 Input augmentations
 training basic model through wide-res-nets

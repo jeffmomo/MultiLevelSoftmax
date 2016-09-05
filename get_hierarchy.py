@@ -4,6 +4,7 @@ import hierarchical_eval
 import functools
 from typing import List, Dict
 from collections import deque
+import os.path
 
 
 class TaxonomyTree(object):
@@ -49,11 +50,13 @@ class TaxonomyTree(object):
         self.index = -1
         self.size = 0
         self.count_at_node = 0
+        self.parent = None
 
     def create_if_not_contain(self, branch_name):
 
         if branch_name not in self.subtrees:
             new = TaxonomyTree(branch_name)
+            new.parent = self
             self.subtrees[branch_name] = new
             return new
 
@@ -117,7 +120,7 @@ class TaxonomyTree(object):
     def __str__(self):
         return self.name
 
-    def bf_count(self):
+    def bf_count(self, mapping=None, threshold=100):
         current_count = 0
         done_count = 0
         total_count = 0
@@ -139,6 +142,10 @@ class TaxonomyTree(object):
 
             head = queue.popleft()
             out_str += head.name + ': ' + str(head.count_at_node) + ', '
+
+            if mapping is not None and head.count_at_node > threshold:
+                mapping[head.parent.name + '.' + head.name] = head.count_at_node
+
             current_count += 1
 
             for k, v in head.subtrees.items():
@@ -181,15 +188,21 @@ def get_chain_by_name(chain, mapping):
     return [mapping[x] for x in chain]
 
 
-def generate_tree():
+def generate_data(tree, generate=False):
 
-    t = TaxonomyTree('init')
-    f = open('observations.csv', 'r')
+
+    tree.generate_layer({})
+
+
+    mapping = {}
+    tree.bf_count(mapping, 100)
     count = 0
-    # gets rid of headers
-    f.readline()
-    csv_file = csv.reader(f, delimiter=',', quotechar='"')
-    for line in csv_file:
+
+    obs = csv.reader(open('observations.csv', 'r'), delimiter=',', quotechar='"')
+
+    classes = set()
+
+    for line in obs:
         splitted = line[26:34]
         name, t_rank, kingdom, phylum, cls, order, family, genus = [x.lower() for x in splitted]
         if 'species' not in t_rank:
@@ -200,16 +213,53 @@ def generate_tree():
             species = duo[1]
         else:
             species = duo[0]
-        t.create_chain([kingdom, phylum, cls, order, family, genus, species])
 
-        count += 1
-        # print(species + ' added')
-        # print(count)
-    # print(t.get_list())
-    t.generate_layer({})
-    print(t.bf_count())
-    # pickle.dump(t, open('hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
+        fullname = genus + '.' + species
+        if fullname in mapping:
+            # print(fullname + ":" + str(mapping[fullname]))
+            classes.add(fullname)
+            count += 1
+
+    print('eligible records: ' + str(count))
+    print('eligible classes: ' + str(len(classes)))
+
+
+
+
+def generate_tree():
+
+    if os.path.isfile('hierarchy_file.dat'):
+        t = pickle.load(open('hierarchy_file.dat', 'rb'))
+    else:
+        t = TaxonomyTree('init')
+        f = open('observations.csv', 'r')
+        count = 0
+        # gets rid of headers
+        f.readline()
+        csv_file = csv.reader(f, delimiter=',', quotechar='"')
+        for line in csv_file:
+            splitted = line[26:34]
+            name, t_rank, kingdom, phylum, cls, order, family, genus = [x.lower() for x in splitted]
+            if 'species' not in t_rank:
+                print('strange taxonomy definition')
+
+            duo = name.split()
+            if len(duo) > 1:
+                species = duo[1]
+            else:
+                species = duo[0]
+            t.create_chain([kingdom, phylum, cls, order, family, genus, species])
+
+            count += 1
+            # print(species + ' added')
+            # print(count)
+        pickle.dump(t, open('hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
+
+    return t
 
 
 # test()
-generate_tree()
+generate_data(generate_tree())
+
+
+
