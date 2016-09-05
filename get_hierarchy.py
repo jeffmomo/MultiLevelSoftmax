@@ -120,14 +120,11 @@ class TaxonomyTree(object):
                 if v.count_at_node < threshold:
                     to_remove.append(k)
 
-
         for item in to_remove:
-             # -= self.subtrees[item].count_at_node
             del self.subtrees[item]
 
-        self.count_at_node = 0
-        for k, v in self.subtrees.items():
-            self.count_at_node += v.count_at_node
+        # recount
+        self.count_at_node = functools.reduce(int.__add__, [v.count_at_node for v in self.subtrees.values()], 0)
 
     def generate_layer(self, mapping: Dict[str, int]) -> hierarchical_eval.Layer:
         if not len(self.subtrees):
@@ -225,6 +222,7 @@ def generate_data(tree, generate=False):
     print(tree.get_list())
     defs_lst = []
     tree.get_definitions(defs_lst)
+    z = []
     # tree.build(defs_lst)
     # tree.generate_layer({})
 
