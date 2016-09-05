@@ -22,6 +22,8 @@ Maybe produce all "probabilities" for all leaf nodes, sum them, and use current 
 this is probably not possible
 ----
 
+---
+
 ## Progress reports ##
 
 
@@ -34,6 +36,8 @@ Input augmentations
 training basic model through wide-res-nets
 
 -----done----
+
+Prune tree such that only nodes with a certain number of observations remain
 
 Can transform string-based hierarchy chains into index-based hierarchy chains for use in the Layer structure
 
@@ -54,5 +58,12 @@ This will be done using OpenCV.
 We will only take the central 50% of the pixels into consideration, and we have to normalise all images such that they have 
 an equal size and aspect ratio.
 
+### How To Use ###
 
+1. Generate taxonomy tree with the hierarchy chains
+2. Get the leaf node (or not, if you want to use Genus) definitions as a list (this will be the labels vector)
+3. Build using this definitions list
+4. Generate a Layer and a mapping from fullname to layer index
+5. We can now the mapping to map from a name-based hierarchy to a index-based hierarchy for use with the Layer
+6. Use the Layer (possibly along with a priors chain) to evaluate a target vector
 

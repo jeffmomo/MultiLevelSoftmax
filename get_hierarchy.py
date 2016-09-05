@@ -77,7 +77,8 @@ class TaxonomyTree(object):
 
     def assign_indices(self, definitions: List[str]) -> None:
         if not len(self.subtrees):
-            self.index = definitions.index(self.name)  # assigns index by name
+            self.index = definitions.index(self.parent.name + '.' + self.name)  # assigns index by fullname
+            assert(self.index >= 0)  # make sure the name actually exists in the index
         else:
             for k, v in self.subtrees.items():
                 v.assign_indices(definitions)
@@ -97,6 +98,36 @@ class TaxonomyTree(object):
             return self.name
         else:
             return [x.get_list() for _, x in self.subtrees.items()]
+
+    def get_definitions(self, definitions=[], threshold=100):
+        if not len(self.subtrees):
+            if self.count_at_node > threshold:
+                definitions.append(self.parent.name + '.' + self.name)
+        else:
+            for k, v in self.subtrees.items():
+                v.get_definitions(definitions)
+
+    def prune(self, threshold=100):
+        if not len(self.subtrees):
+            return
+
+        to_remove = []
+        for k, v in self.subtrees.items():
+            if v.count_at_node < threshold:
+                to_remove.append(k)  # remove node
+            else:
+                v.prune()
+                if v.count_at_node < threshold:
+                    to_remove.append(k)
+
+
+        for item in to_remove:
+             # -= self.subtrees[item].count_at_node
+            del self.subtrees[item]
+
+        self.count_at_node = 0
+        for k, v in self.subtrees.items():
+            self.count_at_node += v.count_at_node
 
     def generate_layer(self, mapping: Dict[str, int]) -> hierarchical_eval.Layer:
         if not len(self.subtrees):
@@ -190,8 +221,13 @@ def get_chain_by_name(chain, mapping):
 
 def generate_data(tree, generate=False):
 
+    tree.prune(100)
+    print(tree.get_list())
+    defs_lst = []
+    tree.get_definitions(defs_lst)
+    # tree.build(defs_lst)
+    # tree.generate_layer({})
 
-    tree.generate_layer({})
 
 
     mapping = {}
