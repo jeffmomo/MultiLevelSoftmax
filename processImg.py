@@ -14,7 +14,7 @@
 import math
 import cv2
 import numpy as np
-
+import sys
 
 def get_factors(width, height):
 
@@ -53,10 +53,10 @@ def crop(orig_width, orig_height, factor, img):
 
 
 
-targetx = 128
-targety = 128
+targetx = 108
+targety = 108
 
-content = np.fromstring(open('test.jpg', 'rb').read(), np.uint8)
+content = np.fromstring(open(sys.argv[1], 'rb').read(), np.uint8)
 testimg = cv2.imdecode(content, 1)
 
 testimg = crop_square(testimg)
@@ -64,4 +64,4 @@ height, width, _ = testimg.shape
 
 scaled = cv2.resize(testimg, None, fx=targetx/width, fy=targety/height, interpolation=cv2.INTER_CUBIC)
 
-cv2.imwrite('done.jpg', scaled)
+cv2.imwrite('.'.join(['mod'] + sys.argv[1].split('.')), scaled)

@@ -1,14 +1,20 @@
 import csv
 import pickle
+from typing import Dict, List, Set
 import hierarchical_eval
 import functools
-from typing import List, Dict
 from collections import deque
 import os.path
-import cv2
+import collections
+from level_evaluate import LevelNode, Evaluator
 
 
 class TaxonomyTree(object):
+
+    join_character = '.'
+
+    def get_full_name(self):
+        return None if self.parent is None else self.parent.name + TaxonomyTree.join_character + self.name
 
     def children(self):
         if not len(self.subtrees):
@@ -26,7 +32,7 @@ class TaxonomyTree(object):
             #     continue
 
             for child in v.children():
-                output[child.index] += current_significance * self.normalised_scalar_count
+                output[child.index] += current_significance * self.count_ratio # normalise towards the smallest count under parent
 
         return current_significance * k, k, output, self.name
 
@@ -47,28 +53,37 @@ class TaxonomyTree(object):
 
         targets = self.forwards(max_significance, chain, k, self.size)[2]
         if normalize:
-            length = functools.reduce(lambda accum, val: val ** 2 + accum, targets, 0) ** 0.5
+            length = functools.reduce(lambda accum, val: val + accum, targets, 0)
             targets = [x / length for x in targets]
         return targets
 
     def __init__(self, name):
 
-        self.subtrees = dict()
+        self.subtrees = self._make_subtree_dict()
         self.name = name
         self.index = -1
         self.size = -1
         self.count_at_node = 0
         self.parent = None
         self.normalised_scalar_count = 1
+        self.count_ratio = 1
+        self.join_character = '.'
 
-    def normalise_count(self, my_norm):
+    def _make_subtree_dict(self) -> Dict[str, 'TaxonomyTree']:
+        return collections.OrderedDict()
+
+    def normalise_count(self, my_norm, count_ratio):
+        self.normalised_scalar_count = my_norm
+        self.count_ratio = count_ratio
+
         if not len(self.subtrees):
             return
 
-        self.normalised_scalar_count = my_norm
+        min_count = functools.reduce(lambda accum, x: x if x < accum else accum, [x.count_at_node for x in self.subtrees.values()], 9999999999)
+
 
         for v in self.subtrees.values():
-            v.normalise_count(v.count_at_node / self.count_at_node)
+            v.normalise_count(v.count_at_node / self.count_at_node, min_count / v.count_at_node)
 
     def create_if_not_contain(self, branch_name):
 
@@ -105,11 +120,44 @@ class TaxonomyTree(object):
 
     def assign_indices(self, definitions: List[str]) -> None:
         if not len(self.subtrees):
-            self.index = definitions.index(self.parent.name + '-' + self.name)  # assigns index by fullname
+            self.index = definitions.index(self.get_full_name())  # assigns index by fullname
             assert(self.index >= 0)  # make sure the name actually exists in the index
         else:
             for k, v in self.subtrees.items():
+
                 v.assign_indices(definitions)
+
+    def generate_reverse_tree(self, mapping, leaf_only=True):
+
+        # if not len(self.subtrees):
+        #     entry = []
+        #
+        #     parent = self
+        #     while parent.parent is not None:
+        #         entry.append(parent.get_full_name())
+        #         parent = parent.parent
+        #
+        #     mapping[self.get_full_name()] = entry
+        #     return
+
+        if not len(self.subtrees) or (not leaf_only and self.get_full_name() is not None):
+            entry = []
+
+            parent = self
+            while parent.parent is not None:
+                entry.append(parent.get_full_name())
+                parent = parent.parent
+
+            mapping[self.get_full_name()] = entry
+
+            # if not len(self.subtrees):
+            #     return
+
+
+        for v in self.subtrees.values():
+            v.generate_reverse_tree(mapping, leaf_only)
+
+
 
     def leaves(self) -> list:
         if not len(self.subtrees):
@@ -129,13 +177,17 @@ class TaxonomyTree(object):
         else:
             return [x.get_list() for _, x in self.subtrees.items()]
 
-    ### Gets all the leaf nodes of the hierarchy
-    def get_definitions(self, definitions=[]):
+    ### Gets all the leaf/all nodes of the hierarchy
+    def get_definitions(self, definitions, leaf_only=True, offset_by_one=False):
+
         if not len(self.subtrees):
-            definitions.append(self.parent.name + '-' + self.name)
+            definitions.append(self.get_full_name())
         else:
+            if not leaf_only and self.parent is not None:
+                definitions.append(self.get_full_name())
+
             for k, v in self.subtrees.items():
-                v.get_definitions(definitions)
+                v.get_definitions(definitions, leaf_only)
 
     def prune(self, threshold=100):
         if not len(self.subtrees):
@@ -156,9 +208,30 @@ class TaxonomyTree(object):
         # recount
         self.count_at_node = functools.reduce(int.__add__, [v.count_at_node for v in self.subtrees.values()], 0)
 
-    def generate_layer(self, mapping: Dict[str, int]) -> hierarchical_eval.Layer:
+    def generate_leaf_indices(self):
+
+        leaves = []
+        self.get_definitions(leaves)
+
+        all_nodes = ['__BACKGROUND__']
+        self.get_definitions(all_nodes, False)
+
+        output = set()
+        for leaf in leaves:
+            output.add(all_nodes.index(leaf))
+
+        return output
+
+    def generate_level_nodes(self, label_list: List[str]) -> LevelNode:
+
+        child_nodes = [x.generate_level_nodes(label_list) for x in self.subtrees.values()]
+        root_node = LevelNode(-1 if self.get_full_name() is None else label_list.index(self.get_full_name()), child_nodes)
+
+        return root_node
+
+    def generate_layer(self, mapping: Dict[str, int]) -> (hierarchical_eval.Layer, str):
         if not len(self.subtrees):
-            return self.index
+            return (self.index, self.name)
         else:
             lst = []
             idx = 0
@@ -167,13 +240,15 @@ class TaxonomyTree(object):
             # (either leaves or non-leaves) must have different name
             for k, v in self.subtrees.items():
                 lst.append(v.generate_layer(mapping))
-                compound = self.name + '-' + k
+                compound = self.name + self.join_character + k
                 if compound in mapping:
                     print('Duplicate naming: ' + compound)
                 mapping[compound] = idx
                 idx += 1
 
-            return hierarchical_eval.Layer(lst)
+            assert all([type(x) == type(lst[0]) for x in lst])
+
+            return (hierarchical_eval.Layer(lst, self.get_full_name()), self.name)
 
     def __str__(self):
         return self.name
@@ -202,7 +277,7 @@ class TaxonomyTree(object):
             out_str += head.name + ': ' + str(head.count_at_node) + ', '
 
             if mapping is not None:
-                mapping[head.parent.name + '-' + head.name] = head.count_at_node
+                mapping[head.get_full_name()] = head.count_at_node
 
             current_count += 1
 
@@ -259,27 +334,37 @@ def get_chain_by_name(chain, mapping):
 
 
 
-def generate_tree():
+def generate_tree(nz_only=False):
+
+    skipped_count = 0
 
     if os.path.isfile('hierarchy_file.dat'):
         t = pickle.load(open('hierarchy_file.dat', 'rb'))
     else:
         t = TaxonomyTree('init')
-        f = open('observations.csv', 'r')
+        f = open('/home/dm116/Workspace/MultiLevelSoftmax/observations.csv', 'r')
         count = 0
         # gets rid of headers
         f.readline()
         csv_file = csv.reader(f, delimiter=',', quotechar='"')
         for line in csv_file:
+            is_NZ = line[21] == "NZ"
+
+            if nz_only and not is_NZ:
+                continue
+                
             splitted = line[26:34]
 
             if any([True for x in splitted if x == '']):
                 print('gap in hierarchy: ' + ', '.join(splitted))
-                # continue
+                skipped_count += 1
+                continue
 
             name, t_rank, kingdom, phylum, cls, order, family, genus = [x.lower() for x in splitted]
             if 'species' not in t_rank:
                 print('strange taxonomy definition')
+                skipped_count += 1
+                continue
 
             duo = name.split()
             if len(duo) > 1:
@@ -290,14 +375,11 @@ def generate_tree():
 
             count += 1
             # print(species + ' added')
-            # print(count)
         pickle.dump(t, open('hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
+        print('Skipped: ' + str(skipped_count))
 
     return t
 
 
 # test()
 # generate_data(generate_tree())
-
-
-
