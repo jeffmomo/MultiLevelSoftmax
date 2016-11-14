@@ -1,0 +1,8 @@
+Mongo Schema
+
+ClassToSpecies := Name: String, Species: [String]; Indexed by Name with Hash
+
+LastModifiedDate := Date: Date; Ensure only 1 element
+
+Classifications := Filename: String, Content: String
+

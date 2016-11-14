@@ -11,36 +11,48 @@ class LayerEvaluator:
         self.initial_depth = len(conditionals)
 
         for level in conditionals:
-            next_layer = [x for x, _ in self.root.elems if x.name == level]
-            assert len(next_layer) > 0, "The layer condition cannot be satisfied"
+            print(self.root.elems)
+            next_layer = [x for x, _ in self.root.elems if type(x) is Layer and x.name == level]
+            if not len(next_layer):
+                print("The layer condition cannot be satisfied")
+                break
+
             self.root = next_layer[0]
+
+    @staticmethod
+    def invariant_sum(item, output):
+        if type(item) is float:
+            return item
+        else:
+            return item.sum(output)
 
     def dijkstra_top(self, output) -> Tuple[float, str]:
         heap = []
-        root_sum = self.root.avg(output)
-        for item, _ in self.root.elems:
-            heapq.heappush(heap, (-item.avg(output) / root_sum, random.random(), item)) # use negative for max-heap
+        # root_sum = LayerEvaluator.invariant_sum(self.root, output)
+        # for item, _ in self.root.elems:
+        #     heapq.heappush(heap, (LayerEvaluator.invariant_sum(-item, output) / root_sum, random.random(), item)) # use negative for max-heap
+
+        heapq.heappush(heap, (-1, random.random(), self.root))
 
         while len(heap):
             negative_prob, _, lvlnode = heapq.heappop(heap)
-            # print(negative_prob, lvlnode)
 
             if type(lvlnode) is str:
                 return (-negative_prob, lvlnode)
 
             if lvlnode.is_near_leaf():
 
-                sum_near_leaf = lvlnode.avg(output)
+                sum_near_leaf = LayerEvaluator.invariant_sum(lvlnode, output)
                 max_elem = max([(idx, output[idx]) for idx, _ in lvlnode.elems], key=lambda x: x[1])
                 heapq.heappush(heap, (negative_prob * (max_elem[1] / sum_near_leaf), random.random(), self.definitions[max_elem[0]]))
             else:
                 assert all([type(x) == Layer for x, _ in lvlnode.elems])
-                node_sum = lvlnode.avg(output)
+                node_sum = LayerEvaluator.invariant_sum(lvlnode, output)
 
                 # print(node_sum)
                 for item, _ in lvlnode.elems:
                     # print(negative_prob * (item.avg(output) / node_sum), item)
-                    heapq.heappush(heap, (negative_prob * (item.avg(output) / node_sum), random.random(), item))
+                    heapq.heappush(heap, (negative_prob * (LayerEvaluator.invariant_sum(item, output) / node_sum), random.random(), item))
 
         return None
 
@@ -58,17 +70,17 @@ class LayerEvaluator:
 
             if max_elem is None or depth > max_elem[0] or (depth == max_elem[0] and prob > max_elem[1]):
                 max_elem = (depth, prob, name)
-            #if not len(return_heap) or neg_depth < return_heap[0][0] or (neg_depth == return_heap[0][0] and prob > return_heap[0][1]):
-            #    heapq.heappush(return_heap, (neg_depth, prob, name))
 
         heap = []  # heap is tuple of (negative probability, Layer, depth), is minheap.
-        root_sum = self.root.avg(output)
-        for conditional_probability_neg, item in sorted([(-x.avg(output) / root_sum, x) for x, _ in self.root.elems], key=lambda z: z[0]):
-            retval = conditional_push((self.initial_depth, -conditional_probability_neg, item.name))
-            if retval:
-                return retval
-            if -conditional_probability_neg > threshold:
-                heapq.heappush(heap, (conditional_probability_neg, random.random(), item, self.initial_depth)) # use negative for max-heap
+        # root_sum = self.root.sum(output)
+        # for conditional_probability_neg, item in sorted([(-x.sum(output) / root_sum, x) for x, _ in self.root.elems], key=lambda z: z[0]):
+        #     retval = conditional_push((self.initial_depth, -conditional_probability_neg, item.name))
+        #     if retval:
+        #         return retval
+        #     if -conditional_probability_neg > threshold:
+        #         heapq.heappush(heap, (conditional_probability_neg, random.random(), item, self.initial_depth)) # use negative for max-heap
+        #
+        heapq.heappush(heap, (-1, random.random(), self.root, self.initial_depth - 1))
 
 
         while len(heap):
@@ -83,7 +95,7 @@ class LayerEvaluator:
 
             elif lvlnode.is_near_leaf():
 
-                sum_near_leaf = lvlnode.avg(output)
+                sum_near_leaf = lvlnode.sum(output)
                 sorted_elems = sorted([(idx, output[idx]) for idx, _ in lvlnode.elems], key=lambda x: -x[1])
 
                 conditional_probability_neg = negative_prob * (sorted_elems[0][1] / sum_near_leaf)
@@ -93,10 +105,10 @@ class LayerEvaluator:
 
             else:
                 assert all([type(x) == Layer for x, _ in lvlnode.elems])
-                node_sum = lvlnode.avg(output)
+                node_sum = lvlnode.sum(output)
 
                 # print(node_sum)
-                for conditional_probability_neg, item in sorted(filter(lambda x: -x[0] > threshold, [(negative_prob * (x.avg(output) / node_sum), x) for x, _ in lvlnode.elems]), key=lambda z: z[0]):
+                for conditional_probability_neg, item in sorted(filter(lambda x: -x[0] > threshold, [(negative_prob * (x.sum(output) / node_sum), x) for x, _ in lvlnode.elems]), key=lambda z: z[0]):
                     #conditional_probability_neg = negative_prob * (item.avg(output) / node_sum)
                     #if -conditional_probability_neg > threshold:
                     heapq.heappush(heap, (conditional_probability_neg, random.random(), item, depth + 1))
@@ -129,13 +141,13 @@ class Layer:
         #    return self.elems
         return reduce(lambda a, b: a + b, [x.getChildren() if type(x) == Layer else [(x, name)] for (x, name) in self.elems], [])
 
-    def avg(self, output):
+    def sum(self, output):
         summation = 0
         children = self.getChildren()
         for (elem, name) in children:
             summation += output[elem]
 
-        return summation#(summation / len(children))# + m
+        return summation
 
     def evaluateWithPrior(self, priors: list, output: list, chain: list) -> (int, list):
         layer = self.elems
@@ -153,7 +165,7 @@ class Layer:
         # elems are each a tuple of (list | Layer, name)
         #if type(self.elems[0][0]) != Layer:
 
-        mapped = sorted([(x.avg(output) if type(x) == Layer else output[x], x, idx, name) for idx, (x, name) in enumerate(self.elems)], key=lambda x: -x[0])
+        mapped = sorted([(x.sum(output) if type(x) == Layer else output[x], x, idx, name) for idx, (x, name) in enumerate(self.elems)], key=lambda x: -x[0])
 
         chain.append(mapped[0][3])
         debug.append(mapped)

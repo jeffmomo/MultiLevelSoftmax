@@ -1,44 +1,34 @@
-from get_hierarchy import *
-import get_hierarchy
 import os.path
-import cv2
-from subprocess import call
-import random
 
+import cv2
+
+from hierarchy import get_hierarchy
+from hierarchy.get_hierarchy import *
 
 
 def generate_data(tree, generate=False):
 
-    produced_files = set()
-    already_produced_count = 0
-
-
-    tree.prune(threshold=100)
+    tree.prune(threshold=1000)
     # print(tree.get_list())
     defs_lst = []
-    tree.get_definitions(defs_lst, leaf_only=False)
+    tree.get_definitions(defs_lst)
     print(defs_lst)
     print(str(len(defs_lst)))
     print(tree.count_at_node)
+    z = []
     tree.build(defs_lst)
+    # tree.generate_layer({})
 
     mapping = {}
     tree.bf_count(mapping)
+    print(type(tree.subtrees))
     count = 0
 
+    return
 
     obs = open('output.csv', 'r')
     classes = set()
-
-    if not os.path.exists('generated/train'):
-        os.mkdir('generated/train')
-    if not os.path.exists('generated/validation'):
-        os.mkdir('generated/validation')
-
-    for label in defs_lst:
-        if not os.path.exists('generated/train/' + label):
-            os.mkdir('generated/train/' + label)
-            os.mkdir('generated/validation/' + label)
+    usable_records = open('usables.csv', 'w+')
 
 
     for line in obs:
@@ -53,13 +43,6 @@ def generate_data(tree, generate=False):
         if len(second_split) < 2:
             print(line)
         file_name = second_split[2]
-
-        if file_name in produced_files:
-            print('already produced', already_produced_count)
-            already_produced_count += 1
-            continue
-        else:
-            produced_files.add(file_name)
 
         splitted = line[26:34]
 
@@ -78,8 +61,8 @@ def generate_data(tree, generate=False):
         else:
             species = duo[0]
 
-        fullname = genus + tree.join_character + species
-        if fullname in defs_lst:
+        fullname = genus + '.' + species
+        if fullname in mapping:
             # print(fullname + ":" + str(mapping[fullname]))
             classes.add(fullname)
             # print(tree.generate_targets(1, [x for x in [kingdom, phylum, cls, order, family, genus, species] if x != ''], 0.5, True))
@@ -91,23 +74,21 @@ def generate_data(tree, generate=False):
 
             extname = file_name + '.' + c_type[1]
             fullpath = "../images/" + extname
-            label_id = defs_lst.index(fullname)
+            label_id = defs_lst.index(genus + '.' + species)
             if label_id < 0:
                 print('bad label')
 
-            if os.path.isfile(fullpath): #and cv2.imread(fullpath) is not None:
-
-                directory = 'generated/train/' if random.random() < 0.8 else 'generated/validation/'
-                call(["ln", fullpath, directory + fullname + "/" + extname])
-
+            if os.path.isfile(fullpath) and cv2.imread(fullpath) is not None:
+                outstr = ','.join([extname, kingdom, phylum, cls, order, family, genus, species, str(label_id)])
+                usable_records.write(outstr + '\n')
+                # print(outstr)
                 count += 1
-            else:
-                print("file not valid: " + fullpath)
 
 
             print(count)
 
     print('eligible records: ' + str(count))
     print('eligible classes: ' + str(len(classes)))
+    usable_records.close()
 
 generate_data(get_hierarchy.generate_tree())

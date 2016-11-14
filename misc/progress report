@@ -57,12 +57,28 @@ Having ALL nodes at the hierarchy being a class in the neural network.
 Have a uniform prior, e.g. [0, 0.25, 0.25, 0, 0.25, 0.25, 0] with all the labels being non-zero but equal to each other.
 At the classification stage, for each level in hierarchy, find the highest prob. for nodes in that level under the prior node.
 Descent to bottom.
+
+
+
+Deliberate training with mislabeled data - may allow the network to learn to better disambiguate between them
 ---
 
 ## Progress reports ##
 
 
 -----ongoing-----
+
+
+
+Display bounding boxes
+
+Web app allow specification of prior
+
+Apply label splitting
+
+Apply unsupervised bounding box generation
+
+Add web application which allows scaling, cropping, rotating, and also allows uploading from URL
 
 need to put in report the class distribution and number of samples per class.
 
@@ -83,13 +99,23 @@ Do this using tf.constant, and tf.gather.
 
 Testing transfer learning on bigger data set
 
+
+
+-----done----
+
 Find out way to produce top-k most likely labels.
 
 Adding hierarchy chain to evaluation outputs (needs testing) - hierarchical_eval.py
 
------done----
-Removed random hues.
+Apply label spillage. Too slow to train.
 
+Using Inception Resnet
+
+Build web classifier
+
+Using Adam
+
+Removed random hues.
 
 Building 2090 class dataset.
 

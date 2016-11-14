@@ -1,12 +1,13 @@
-import csv
-import pickle
-from typing import Dict, List, Set
-import hierarchical_eval
-import functools
-from collections import deque
-import os.path
 import collections
-from level_evaluate import LevelNode, Evaluator
+import csv
+import functools
+import os.path
+import pickle
+from collections import deque
+from typing import Dict, List
+
+from hierarchy import hierarchical_eval
+from hierarchy.level_evaluate import LevelNode
 
 
 class TaxonomyTree(object):
@@ -32,6 +33,7 @@ class TaxonomyTree(object):
             #     continue
 
             for child in v.children():
+                print(child.index)
                 output[child.index] += current_significance * self.count_ratio # normalise towards the smallest count under parent
 
         return current_significance * k, k, output, self.name
@@ -47,11 +49,11 @@ class TaxonomyTree(object):
 
         return self.backwards(current_significance, k, output, name)
 
-    def generate_targets(self, max_significance: float, chain: List[str], k: float, normalize=True) -> (float, float, list, str):
+    def generate_targets(self, max_significance: float, chain: List[str], k: float, num_classes: int, normalize=True) -> (float, float, list, str):
         if self.size == -1:
             raise Exception('Tree has not been built yet. run TaxonomyTree.build')
 
-        targets = self.forwards(max_significance, chain, k, self.size)[2]
+        targets = self.forwards(max_significance, chain, k, num_classes)[2]
         if normalize:
             length = functools.reduce(lambda accum, val: val + accum, targets, 0)
             targets = [x / length for x in targets]

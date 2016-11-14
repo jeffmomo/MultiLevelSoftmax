@@ -1,6 +1,4 @@
-import get_hierarchy
-
-
+from hierarchy import get_hierarchy
 
 
 def generate_data(tree, generate=False):
@@ -20,7 +18,8 @@ def generate_data(tree, generate=False):
     print(str(len(defs_leaf)))
     print(tree.count_at_node)
     z = []
-    tree.build(defs_lst)
+    # tree.build(defs_lst)
+    tree.build(defs_leaf)
     # tree.generate_layer({})
 
     mapping = {}
@@ -29,8 +28,12 @@ def generate_data(tree, generate=False):
 
     reverse_mapping = {}
     tree.generate_reverse_tree(reverse_mapping, False)
+    
+    print(len(tree.children()))
 
-    print(reverse_mapping)
+    #return
+
+    # print(reverse_mapping)
 
 
     """ Need to increase class count by 1, to account for tensorflow's background default class
@@ -54,13 +57,25 @@ def generate_data(tree, generate=False):
             output[idx] = 1
 
         embeddings.append(output)
-
-
-        # chain = ['-'.join(x.split('-')[:-1]) for x in reverse_mapping[x][::-1]]
-        # embeddings.append(tree.generate_targets(1, chain, 0.5))
+#        print([x.split('.')[1] for x in reverse_mapping[item]])
+#        print(tree.generate_targets(1.0, [x.split('.')[1] for x in reverse_mapping[item]][::-1], 0.5, len(defs_leaf)))
+        #chain = ['.'.join(x.split('.')[:-1]) for x in reverse_mapping[item][::-1]]
+        #print(tree.generate_targets(1, chain, 0.5))
         pass
 
-    with open('index_map.dat', 'w+') as map_file:
+    with open('spilled.dat', 'w+') as spilled_file:
+        list_size = len(defs_leaf)
+        for item in defs_lst:
+            if item in defs_leaf:
+                
+                out = (tree.generate_targets(1.0, [x.split('.')[1] for x in reverse_mapping[item]][::-1], 0.5, len(defs_leaf)))
+                spilled_file.write(','.join([str(x) for x in out]) + '\n')
+                pass
+            else:
+                spilled_file.write(','.join(['0.00'] * list_size) + '\n')
+
+
+    with open('index_map2.dat', 'w+') as map_file:
 
         # for tensorflow background class
         map_file.write(str(0) + '\n')
@@ -71,7 +86,7 @@ def generate_data(tree, generate=False):
             map_file.write(str(leaf_idx + 1) + '\n')
 
 
-    with open('embeddings.dat', 'w+') as embeddings_file:
+    with open('embeddings2.dat', 'w+') as embeddings_file:
         for line in embeddings:
             embeddings_file.write(','.join([str(x) for x in line]) + '\n')
 

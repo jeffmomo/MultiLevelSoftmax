@@ -1,9 +1,4 @@
-from get_hierarchy import *
-import get_hierarchy
-import os.path
-import cv2
-import math
-import level_evaluate
+from hierarchy import get_hierarchy, level_evaluate
 
 definitions_list = ['__BACKGROUND__']
 

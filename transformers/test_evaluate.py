@@ -1,8 +1,7 @@
-from get_hierarchy import *
-import get_hierarchy
-import os.path
-import cv2
 import math
+
+from hierarchy import get_hierarchy
+from hierarchy.get_hierarchy import *
 
 definitions_list = []
 
@@ -264,7 +263,7 @@ while True:
     for i in range(-1, -min(len(reverse_tree_actual), len(reverse_tree_predicted)) - 1, -1):
         tree_output.append((reverse_tree_predicted[i].split(tree.join_character)[1]) + ',' + (reverse_tree_actual[i].split(tree.join_character)[1]))
 
-    htmlout.write('|'.join([filename.split("'")[1], predicted_name, actual_name, '#'.join(tree_output), str(thresh_result[0]), str(thresh_result[1] in label_reverse_tree), str(thresh_result[2])]) + "\n")
+    htmlout.write('|'.join([filename, predicted_name, actual_name, '#'.join(tree_output), str(thresh_result[0]), str(thresh_result[1] in label_reverse_tree), str(thresh_result[2])]) + "\n")
     htmlout.flush()
     
     print('h', correct_h_count / total_count)
