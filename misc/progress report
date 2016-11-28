@@ -42,6 +42,8 @@ Top-k dijkstra
 ----
 Unsupervised partitioning of training data, such that they belong to distinct groups and can be trained on
 
+Level by level partitioning with respect to tree !!!!!!!!!!!!!!
+
 ----
 
 ### Musings ###
@@ -68,11 +70,7 @@ Deliberate training with mislabeled data - may allow the network to learn to bet
 
 -----ongoing-----
 
-
-
 Display bounding boxes
-
-Web app allow specification of prior
 
 Apply label splitting
 
@@ -102,6 +100,8 @@ Testing transfer learning on bigger data set
 
 
 -----done----
+
+Web app allow specification of prior
 
 Find out way to produce top-k most likely labels.
 

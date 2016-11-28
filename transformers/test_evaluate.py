@@ -1,24 +1,20 @@
 import math
+import sys
+import functools
 
-from hierarchy import get_hierarchy
-from hierarchy.get_hierarchy import *
+import hierarchy.get_hierarchy as get_hierarchy
+import hierarchy.hierarchical_eval as hierarchical_eval
 
 definitions_list = []
-
 
 htmlout = open('html.html', 'w+')
 
 histogramout = open('histogram.dat', 'w+')
 
-
-
 layer_correct = {}
 layer_total = {}
 layer_class_correct = {}
 layer_class_total = {}
-
-
-
 
 correct_h_count = 0.0
 correct_count = 0.0
@@ -110,8 +106,11 @@ def filter_builder(match, position=-1):
 labelmap = {}
 evaluator = hierarchical_eval.LayerEvaluator(layer, definitions_list)
 while True:
+    print('init')
     vals = get_relevant_input()
     label_and_filename = get_relevant_input().split(' ')
+
+    print('zzz')
 
     data = [float(f) for f in vals.split(' ')[1].split(',')[1:]]
     data_exp_sum = sum([math.exp(x) for x in data])

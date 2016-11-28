@@ -62,8 +62,16 @@ for line in sys.stdin:
     data = [float(f) for f in splitted[0].split(',')[1:]]
     data_exp_sum = sum([math.exp(x) for x in data])
     data = [math.exp(x) / data_exp_sum for x in data]
-
     
+
+    top5 = []
+    for name, prob in [(definitions_list[x[0]], x[1]) for x in sorted(list(enumerate(data)), key=lambda x: -x[1])[0:5]]:
+        top5.append(name)
+        top5.append(prob)
+    print(top5)
+
+
+
     index = int(splitted[1])
     name = '.'.join(map(lambda x: x.lower(), splitted[3].replace("\n", "").replace(' ', '.').split('.')))
     priors_used = ''
@@ -88,4 +96,4 @@ for line in sys.stdin:
     print(definitions_list[data.index(max(data))])
     print(name)
 
-    pipe_write(",".join([str(x) for x in [result[0], result[1], thresh_result[0], thresh_result[1], thresh_result[2], index, splitted[2], priors_used]]))
+    pipe_write(",".join([str(x) for x in ([result[0], result[1], thresh_result[0], thresh_result[1], thresh_result[2], index, splitted[2], priors_used] + top5 + [splitted[4]])]))
