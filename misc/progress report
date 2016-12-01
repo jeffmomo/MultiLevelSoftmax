@@ -44,6 +44,9 @@ Unsupervised partitioning of training data, such that they belong to distinct gr
 
 Level by level partitioning with respect to tree !!!!!!!!!!!!!!
 
+Multi-stage training with respect to levels.
+Also allow merging levels instead of only expanding??? Could be interesting to try.
+
 ----
 
 ### Musings ###
