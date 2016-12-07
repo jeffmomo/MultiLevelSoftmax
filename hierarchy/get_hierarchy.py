@@ -10,6 +10,41 @@ from hierarchy import hierarchical_eval
 from hierarchy.level_evaluate import LevelNode
 
 
+class IndexedHashSet(collections.Iterable):
+
+    def __init__(self):
+        self._hs = set()
+        self._ls = []
+
+    def add(self, item):
+        if item not in self._hs:
+            self._hs.add(item)
+            self._ls.append(item)
+
+    def remove(self, item):
+        if item in self._hs:
+            self._hs.remove(item)
+            self._ls.remove(item)
+
+    def index(self, *args):
+        return self._ls.index(*args)
+
+    def __len__(self):
+        assert len(self._hs) == len(self._ls), "Data structures not matching"
+        return len(self._hs)
+
+    def __iter__(self):
+        return iter(self._ls)
+
+    def __contains__(self, item):
+        return item in self._hs
+
+    def __getitem__(self, item):
+        return self._hs[item]
+
+
+
+
 class TaxonomyTree(object):
 
     join_character = '.'
@@ -71,7 +106,8 @@ class TaxonomyTree(object):
         self.count_ratio = 1
         self.join_character = '.'
 
-    def _make_subtree_dict(self) -> Dict[str, 'TaxonomyTree']:
+    @staticmethod
+    def _make_subtree_dict() -> Dict[str, 'TaxonomyTree']:
         return collections.OrderedDict()
 
     def normalise_count(self, my_norm, count_ratio):
@@ -126,21 +162,9 @@ class TaxonomyTree(object):
             assert(self.index >= 0)  # make sure the name actually exists in the index
         else:
             for k, v in self.subtrees.items():
-
                 v.assign_indices(definitions)
 
     def generate_reverse_tree(self, mapping, leaf_only=True):
-
-        # if not len(self.subtrees):
-        #     entry = []
-        #
-        #     parent = self
-        #     while parent.parent is not None:
-        #         entry.append(parent.get_full_name())
-        #         parent = parent.parent
-        #
-        #     mapping[self.get_full_name()] = entry
-        #     return
 
         if not len(self.subtrees) or (not leaf_only and self.get_full_name() is not None):
             entry = []
@@ -158,6 +182,70 @@ class TaxonomyTree(object):
 
         for v in self.subtrees.values():
             v.generate_reverse_tree(mapping, leaf_only)
+
+    def get_tree_index_mappings(self):
+        """
+        Gets the definitions lists and index mappings for the current hierarchy tree.
+
+        :return: Returns a tuple of definitions lists and index mappings
+        """
+        definitions_lists = []
+        index_mappings = []
+
+
+        assert self.parent is None, "Has to be executed on base tree"
+
+        self.tree_index_mappings(definitions_lists, index_mappings)
+
+        return definitions_lists[1:], index_mappings[:-1]
+
+
+
+    def tree_index_mappings(self, definitions_lists=[], index_mappings=[], depth = 0):
+
+        if len(definitions_lists) <= depth:
+            definitions_lists.append([])
+            index_mappings.append([])
+
+        definitions_lists[depth].append(self.get_full_name())
+
+        if depth > 0:  # assumes if depth > 0, then the current node has a parent.
+            index_mappings[depth - 1].append(definitions_lists[depth - 1].index(self.parent.get_full_name()))
+
+        for item in self.subtrees.values():
+            item.tree_index_mappings(definitions_lists, index_mappings, depth + 1)
+
+
+    # def get_index_mappings(self):
+    #
+    #     # definitions_lists = []
+    #     # index_mappings = []
+    #     #
+    #     # reverse_tree = collections.OrderedDict()  # to make a linked hash map with predictable iteration
+    #     # self.generate_reverse_tree(reverse_tree)
+    #     #
+    #     # max_len = len(next(iter(reverse_tree.values())))  # assumes uniform lengths for trees
+    #     #
+    #     # for i in range(max_len):
+    #     #     definitions_lists.append(IndexedHashSet())
+    #     #     index_mappings.append([])
+    #     #
+    #     # for v in reverse_tree.values():
+    #     #     idx = 0
+    #     #     for name in reversed(v):
+    #     #         definitions_lists[idx].add(name)
+    #     #         if idx > 0:
+    #     #             index_mappings[idx - 1]
+    #     #         idx += 1
+    #     #
+    #     #
+    #     #
+    #     #
+    #     #
+    #     #
+    #     # return definitions_lists, mappings
+
+
 
 
 
@@ -178,6 +266,12 @@ class TaxonomyTree(object):
             return self.name
         else:
             return [x.get_list() for _, x in self.subtrees.items()]
+
+
+    def get_layer_mappings(self):
+        output = []
+
+
 
     ### Gets all the leaf/all nodes of the hierarchy
     def get_definitions(self, definitions, leaf_only=True, offset_by_one=False):
@@ -293,29 +387,6 @@ class TaxonomyTree(object):
 # def process():
 #
 
-def test():
-    tt = TaxonomyTree('init')
-
-    tt.create_chain(['ab', 'a'])
-    tt.create_chain(['ab', 'b'])
-    tt.create_chain(['cc', 'c'])
-    tt.create_chain(['de', 'd'])
-    tt.create_chain(['de', 'e'])
-    # tt.create_chain(['a', 'f', 'i'])
-
-    print(tt.get_list())
-
-    tt.build(['a', 'b', 'c', 'd', 'e'])
-
-    fw = tt.generate_targets(1, ['cc', 'c'], 0.5)
-    print(fw)
-
-    mapping = {}
-    lr = tt.generate_layer(mapping)
-    print(lr.evaluateWithPrior(get_chain_by_name(['de'], mapping), [0.2, 0.4, 0.4, 0.1, 0.5]))
-
-    tt.bf_count()
-
 
 def get_chain_by_name(chain, mapping):
     return [mapping[x] for x in chain]
@@ -385,3 +456,22 @@ def generate_tree(nz_only=False):
 
 # test()
 # generate_data(generate_tree())
+
+def translate_to_level(index_mappings, level_from_root, index):
+    level_from_leaf = len(index_mappings) - level_from_root
+    current_idx = index
+
+    for i in range(1, level_from_leaf):
+        current_idx = index_mappings[-i][current_idx]
+
+    assert current_idx < len(index_mappings[-level_from_leaf]), "Invalid index"
+    return current_idx
+
+#
+# t = generate_tree()
+# t.prune()
+# def_l, i_m = t.get_tree_index_mappings()
+# print((def_l))
+# print((i_m))
+#
+# print(translate_to_level(i_m, 0, 2061))
