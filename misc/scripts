@@ -12,3 +12,15 @@ bazel-bin/inception/flowers_eval --num_examples=1024 --subset=validation --data_
 
 # Newest evaluate
 bazel-bin/inception/flowers_eval --num_examples=100 --subset=validation --data_dir="/tmp/2090_classes" --checkpoint_dir="/tmp/imagenet_train" --run_once --input_queue_memory_factor=1 | python ~/Workspace/MultiLevelSoftmax/test_evaluate.py
+
+
+# Train Normal
+python train_image_classifier.py --train_dir=/home/dm116/Workspace/tmp/multilevel_normal2 --dataset_dir=/home/dm116/Workspace/tmp/3978_classes --dataset_name=species_multilevel --dataset_split_name=train --model_name=inception_resnet_v2 --batch_size=32 --optimizer=adam --checkpoint_path=/home/dm116/Workspace/tmp/checkpoints/inception_resnet_v2_2016_08_30.ckpt --checkpoint_exclude_scopes=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits --save_summaries_secs=30 --current_level=6 --preprocessing_name=species --max_number_of_steps=3000
+
+
+# Train Layered Specialised
+python specialised_train_stagewise.py --train_dir=/home/dm116/Workspace/tmp/multilevel_spc2_test --dataset_dir=/home/dm116/Workspace/tmp/3978_classes --dataset_split_name=train --batch_size=32 --optimizer=adam --checkpoint_path=/home/dm116/Workspace/tmp/checkpoints/inception_resnet_v2_2016_08_30.ckpt --save_summaries_secs=30
+
+
+# Evaluate layered
+python eval_image_classifier.py --dataset_dir=/home/dm116/Workspace/tmp/3978_classes --dataset_name=species_multilevel --dataset_split_name=train --model_name=inception_resnet_v2 --checkpoint_path=/home/dm116/Workspace/tmp/multilevel_spc2_test6/model.ckpt-3000 --batch_size=32 --max_num_batches=2 --current_level=6 --preprocessing_name=species
