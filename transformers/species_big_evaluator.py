@@ -21,9 +21,10 @@ correct_count = 0.0
 correct_d_count = 0.0
 correct_z_count = 0.0
 total_count = 0.0
+total_depth = 0.0
 
-tree = get_hierarchy.generate_tree()
-tree.prune(threshold=100)
+tree = get_hierarchy.pruned_tree
+translation_map = get_hierarchy.native_to_hierarchical_translation_map(tree)
 tree.get_definitions(definitions_list)
 # print(definitions_list)
 print(len(definitions_list))
@@ -68,43 +69,47 @@ def get_relevant_input():
     return out
 
 
-def reduction_builder(position=-1):
 
-        def reduce_root(accum, val):
-            idx, value = val
-            leaf_name = definitions_list[idx]
+class MovingAverage:
 
-            if position < -len(reverse_tree[leaf_name]):
-                return accum
+    def __init__(self, window_size=100):
+        self.queue = []
+        self.moving_sum = 0
+        self.window_size = window_size
 
-            leaf_root = reverse_tree[leaf_name][position]
+    def push_and_get_average(self, val):
+        self.queue.append(val)
+        self.moving_sum += val
+        if len(self.queue) > self.window_size:
+            self.moving_sum -= self.queue[0]
+            self.queue = self.queue[1:]
 
-            accum[leaf_root] = value if leaf_root not in accum else accum[leaf_root] + value
+        return self.moving_sum / len(self.queue)
 
-            return accum
-
-        return reduce_root
-
-def filter_builder(match, position=-1):
-
-    def filter_items(val):
-        idx, value = val
-        leaf_name = definitions_list[idx]
-
-        if position < -len(reverse_tree[leaf_name]):
-            return False
-
-        leaf_root = reverse_tree[leaf_name][position]
-        if leaf_root != match:
-            return False
-
-        return True
-
-    return filter_items
+    def get_average(self):
+        return self.moving_sum / len(self.queue)
 
 
 labelmap = {}
 evaluator = hierarchical_eval.LayerEvaluator(layer, definitions_list)
+
+learning_rate = 0.1
+LEARNING_RATE_DEPTH = 0.001
+per_instance_decay = 0.001
+threshold = 0.9
+TARGET_ACCURACY = 0.9
+TARGET_DEPTH = 5.0
+eps = 0.01
+
+moving_avg = MovingAverage(100)
+moving_depth = MovingAverage(100)
+moving_thresh = MovingAverage(100)
+
+
+moving_depth_value = 1.0
+moving_acc_value = 1.0
+moving_thresh_value = 1.0
+
 while True:
     print('init')
     vals = get_relevant_input()
@@ -112,11 +117,15 @@ while True:
 
     print('zzz')
 
-    data = [float(f) for f in vals.split(' ')[1].split(',')[1:]]
-    data_exp_sum = sum([math.exp(x) for x in data])
-    data = [math.exp(x) / data_exp_sum for x in data]
+    data = [float(f) for f in vals.split(' ')[1].split(',')]
+    translated_data = [0] * len(data)
+    print(len(translation_map), len(data))
+    for i in range(0, len(translation_map)):
+        translated_data[translation_map[i]] = data[i]
 
-    label = int(label_and_filename[1]) - 1
+    data = translated_data
+
+    label = translation_map[int(label_and_filename[1])]
     filename = label_and_filename[2]
     print(filename)
 
@@ -125,12 +134,6 @@ while True:
     idx_of_max, _ = functools.reduce(lambda accum, v: v if v[1] > accum[1] else accum, enumerate(data))
 
     total_count += 1
-
-    print('--')
-    dbg = []
-    predicted_label, chain = layer.evaluate(data, [], dbg)
-
-    
 
 
     def get_max_elem(root_map):
@@ -141,50 +144,9 @@ while True:
         return max_elem
 
 
-    itemset = [x for x in enumerate(data)]
-    root_map = {}
-    initial_position = -1
-    while initial_position >= -len(reverse_tree[definitions_list[label]]):
-        #print(itemset)
-        # if len(reverse_tree[definitions_list[label]]) >= -initial_position:
-        red_fn = reduction_builder(initial_position)
-        root_map = functools.reduce(red_fn, itemset, {})
-        #print(root_map)
-        root_map_max_elem = get_max_elem(root_map)
-        #print(root_map_max_elem)
-
-        # if reverse_tree[definitions_list[label]][initial_position] == root_map_max_elem[0]:
-        #     if initial_position in layer_correct:
-        #         layer_correct[initial_position] += 1.0
-        #     else:
-        #         layer_correct[initial_position] = 1.0
-        #
-        # if initial_position in layer_total:
-        #     layer_total[initial_position] += 1.0
-        # else:
-        #     layer_total[initial_position] = 1.0
-
-        filter_fn = filter_builder(root_map_max_elem[0], initial_position)
-
-        itemset = [x for x in itemset if filter_fn(x)]
-        initial_position -= 1
-
-
-    #print(itemset)
-
-
-    ### For finding cases where my method does not work
-    # if predicted_label == label:
-    #     correct_h_count += 1
-    # elif data[label] == max(data):
-    #     [print(x) for x in dbg]
-    #     print(chain)
-    #     print(definitions_list[label])
-    #     print(max(data))
-
     for level in range(0, len(reverse_tree[definitions_list[label]])):
         
-        level_name = reverse_tree[definitions_list[label]][level].split('-')[0]
+        level_name = reverse_tree[definitions_list[label]][level].split('.')[0]
 
         if level in layer_total:
             layer_total[level] += 1.0
@@ -222,34 +184,36 @@ while True:
     print('total clss', len(labelmap.keys()))
     print('max fraction', max(labelmap.values()) / float(total_count))
 
-    # if label == layer.evaluate(data, [], [])[0]: #itemset[0][0]:
     probability = data[label]
+
+    print("expected: ", label, "actual normal classified:", idx_of_max)
 
     print('normal prob', probability)
 
-    result = evaluator.dijkstra_top(data)
-    print(result)
-    thresh_result = evaluator.dijkstra_threshold(data, 0.8)
+    thresh_result = evaluator.dijkstra_threshold(data, threshold)
     print(thresh_result)
-    if result[1] in label_reverse_tree:
-    # if reverse_tree[definitions_list[label]][0] == root_map_max_elem[0]:
-        correct_d_count += 1
+
+    total_depth += thresh_result[2]
+
+    thresh_result_is_correct = False
 
     if thresh_result[1] in label_reverse_tree:
         correct_z_count += 1
+        thresh_result_is_correct = True
 
-    if reverse_tree[definitions_list[label]][-3] == reverse_tree[definitions_list[idx_of_max]][-3]:
-        correct_count += 0#
+    # if reverse_tree[definitions_list[label]][-3] == reverse_tree[definitions_list[idx_of_max]][-3]:
+    #     correct_count += 0#
 
     if label == idx_of_max:
         correct_count += 1#
 
-    if label == layer.evaluate(data, [], [])[0]:
-        # print('correct')
-        correct_h_count += 1
-    else:
-        pass
+    # if label == layer.evaluate(data, [], [])[0]:
+    #     # print('correct')
+    #     correct_h_count += 1
+    # else:
+    #     pass
         # print('incorrect')
+
 
     
     predicted_name = thresh_result[1]
@@ -264,15 +228,43 @@ while True:
 
     htmlout.write('|'.join([filename, predicted_name, actual_name, '#'.join(tree_output), str(thresh_result[0]), str(thresh_result[1] in label_reverse_tree), str(thresh_result[2])]) + "\n")
     htmlout.flush()
-    
+
+    thresh_accuracy = correct_z_count / total_count
+
     print('h', correct_h_count / total_count)
     print('dijkstra', correct_d_count / total_count)
     print('normal', correct_count / total_count)
-    print('thresh', correct_z_count / total_count)
+    print('thresh', thresh_accuracy)
+    print('avg level', total_depth / total_count)
+
+    single_acc = 1 if thresh_result_is_correct else 0
+
+    new_thresh = moving_thresh.push_and_get_average(threshold)
+    new_acc = moving_avg.push_and_get_average(single_acc)
+    new_depth = moving_depth.push_and_get_average(thresh_result[2])
+
+    d = (new_depth - moving_depth_value + eps) / (new_thresh - moving_thresh_value + eps)
+
+    moving_acc_value = new_acc
+    moving_depth_value = new_depth
+    moving_thresh_value = new_thresh
+
+    print('moving_acc', moving_acc_value)
+    print('moving depth', moving_depth_value)
+    print('moving thresh', moving_thresh_value)
+    print('gradient', d)
 
 
+    threshold += 0.01 * -(TARGET_DEPTH - moving_depth_value)
 
+    if threshold < 0:
+        threshold = 0
+    elif threshold > 1:
+        threshold = 1
 
+    print("current threshold", threshold)
+
+    learning_rate *= (1 - per_instance_decay)
 
 
 defs_lst = []

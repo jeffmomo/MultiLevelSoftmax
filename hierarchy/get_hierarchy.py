@@ -100,6 +100,7 @@ class TaxonomyTree(object):
         self.name = name
         self.index = -1
         self.size = -1
+        self.depth = -1
         self.count_at_node = 0
         self.parent = None
         self.normalised_scalar_count = 1
@@ -271,6 +272,24 @@ class TaxonomyTree(object):
     def get_layer_mappings(self):
         output = []
 
+    def get_subtree_by_name(self, name):
+        """
+        Gets a subtree using a name
+        :param name: The single name (i.e. 'animalia')
+        :return: Returns a TaxonomyTree, or None if the name is not found.
+        """
+        lower_name = name.lower()
+        queue = [self]
+
+        while len(queue):
+            frontier = queue.pop()
+            if frontier.name.lower() == lower_name:
+                return frontier
+
+            for child in frontier.subtrees.values():
+                queue.insert(0, child)
+
+        return None
 
 
     ### Gets all the leaf/all nodes of the hierarchy
@@ -284,6 +303,47 @@ class TaxonomyTree(object):
 
             for k, v in self.subtrees.items():
                 v.get_definitions(definitions, leaf_only)
+
+    def _prune_by_names(self, names_to_keep):
+
+        # z = self._make_subtree_dict()
+        # z.
+
+        if not len(self.subtrees):
+            # if self.name == 'gorilla':
+            #     print(self.get_full_name())
+            #     pass
+            if self.get_full_name() not in names_to_keep:
+                # del self.parent.subtrees[self.name]
+                return self.name
+            else:
+                names_to_keep.remove(self.get_full_name())
+                return None
+
+        to_delete = []
+        for v in self.subtrees.values():
+            name = v._prune_by_names(names_to_keep)
+            if name:
+                to_delete.append(name)
+
+        for val in to_delete:
+            del self.subtrees[val]
+
+        if not len(self.subtrees):
+            return self.name
+        else:
+            return None
+
+    def prune_by_names(self, names_to_keep):
+
+        assert self.parent is None, "Must be performed at root node"
+
+        self._prune_by_names(names_to_keep)
+        # now remove the empty branches.
+        self.prune(threshold=1)
+
+        assert len(names_to_keep) == 0, "Some names are not found"
+        return names_to_keep
 
     def prune(self, threshold=100):
         if not len(self.subtrees):
@@ -348,6 +408,17 @@ class TaxonomyTree(object):
 
     def __str__(self):
         return self.name
+
+    def _assign_depth(self, depth):
+        self.depth = depth
+        for v in self.subtrees.values():
+            v._assign_depth(depth + 1)
+
+    def check_depth(self, leaf_depth):
+        assert self.parent is None, "Must execute on root"
+        self._assign_depth(-1)
+        assert all([x.depth == leaf_depth for x in self.children()])
+        return True
 
     def bf_count(self, mapping=None):
         current_count = 0
@@ -415,7 +486,7 @@ def generate_tree(nz_only=False):
         t = pickle.load(open('hierarchy_file.dat', 'rb'))
     else:
         t = TaxonomyTree('init')
-        f = open('/home/dm116/Workspace/MultiLevelSoftmax/observations.csv', 'r')
+        f = open('/home/jeff/Workspace/MultiLevelSoftmax/observations.csv', 'r')
         count = 0
         # gets rid of headers
         f.readline()
@@ -457,6 +528,29 @@ def generate_tree(nz_only=False):
 # test()
 # generate_data(generate_tree())
 
+def native_to_hierarchical_translation_map(tree: TaxonomyTree):
+    native = get_20k_label_mappings()
+    hierarchical = []
+    tree.get_definitions(hierarchical)
+    mapping = []
+    for name in native:
+        mapping.append(hierarchical.index(name))
+
+    return mapping
+
+
+def hierarchical_to_native_translation_map(tree: TaxonomyTree):
+    native = get_20k_label_mappings()
+    hierarchical = []
+    tree.get_definitions(hierarchical)
+    mapping = []
+    for name in hierarchical:
+        mapping.append(native.index(name))
+
+    return mapping
+
+
+
 def translate_to_level(index_mappings, level_from_root, index):
     level_from_leaf = len(index_mappings) - level_from_root
     current_idx = index
@@ -467,11 +561,80 @@ def translate_to_level(index_mappings, level_from_root, index):
     assert current_idx < len(index_mappings[-level_from_leaf]), "Invalid index"
     return current_idx
 
-#
-# t = generate_tree()
-# t.prune()
-# def_l, i_m = t.get_tree_index_mappings()
+def get_20k_label_mappings():
+    f = open('/media/jeff/9566f510-ddf5-468b-a0fb-1d10bd7fabca/data_dir/labels.txt')
+    names = []
+    for line in f:
+        splitted = line.split(":")
+        name = splitted[1][:-1]
+        names.append(name)
+
+    return names
+
+
+t = generate_tree()
+t.prune(threshold=5)
+t.prune_by_names(get_20k_label_mappings())
+
+pruned_tree = t
+
+def_l, i_m = t.get_tree_index_mappings()
+s = set()
+
 # print((def_l))
+# print(len(t.children()))
+#
+# for i in t.children(): s.add(i.get_full_name())
+# for i in get_20k_label_mappings(): s.remove(i)
+# # bads = []
+# # for item in t.children():
+# #     if item.get_full_name() in s:
+# #         bads.append(item)
+# #         print(item.count_at_node)
+# #         print(item.subtrees)
+# # print(bads)
+# print(s)
+
+def check_tree():
+    print(t.check_depth(leaf_depth=6))
+
+    nm = native_to_hierarchical_translation_map(t)
+    hm = hierarchical_to_native_translation_map(t)
+
+    assert all([x == hm[nm[x]] and x == nm[hm[x]] for x in range(0, len(nm))]) and len(nm) == len(hm), "Mapping not well defined"
+
+def do_plots():
+    from matplotlib import pyplot
+    import numpy as np
+
+    counts = sorted([x.count_at_node for x in t.children()])
+
+    n, bins, patches = pyplot.hist(counts, 6300 // 5)
+    pyplot.plot(bins)
+    pyplot.show()
+    print('z')
+
+    BIN_SIZE = 5
+    total = t.count_at_node
+    num_bins = int(6300 / BIN_SIZE)
+    bins = [0] * num_bins
+
+    # plots the cumulative fraction against number-of-images-in-a-class
+    for count in counts:
+        bins[int(count / BIN_SIZE)] += count
+
+    cumulative = 0
+    for i in range(0, len(bins)):
+        cumulative += bins[i]
+        bins[i] = cumulative / total
+
+
+    print(bins)
+
+
+    pyplot.plot(range(0, (num_bins) * BIN_SIZE, BIN_SIZE), bins)
+    pyplot.show()
+
 # print((i_m))
 #
 # print(translate_to_level(i_m, 0, 2061))

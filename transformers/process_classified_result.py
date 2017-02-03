@@ -39,12 +39,12 @@ evaluator = hierarchical_eval.LayerEvaluator(layer, definitions_list)
 #################
 
 try:
-  os.mkfifo('/home/dm116/Workspace/MultiLevelSoftmax/outpipe')
+  os.mkfifo('/home/jeff/Workspace/MultiLevelSoftmax/outpipe')
 except Exception as e:
   pass
 
 def pipe_write(content):
-  outpipe = open('/home/dm116/Workspace/MultiLevelSoftmax/outpipe', 'w')
+  outpipe = open('/home/jeff/Workspace/MultiLevelSoftmax/outpipe', 'w')
   outpipe.write(content + '>>>EOF<<<')
   outpipe.close()
 ###
@@ -85,6 +85,7 @@ for line in sys.stdin:
         pass
     else:
         result = evaluator.dijkstra_top(data)
+        #thresh_result = evaluator.dijkstra_with_initial_domain(['animalia.chordata'], data, 0.5)
         thresh_result = evaluator.dijkstra_threshold(data, 0.5)
         pass
 

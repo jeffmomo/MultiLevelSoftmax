@@ -45,7 +45,25 @@ Unsupervised partitioning of training data, such that they belong to distinct gr
 Level by level partitioning with respect to tree !!!!!!!!!!!!!!
 
 Multi-stage training with respect to levels.
+
 Also allow merging levels instead of only expanding??? Could be interesting to try.
+----
+Mult-View CNN
+
+Multi-Resolution classification system. Use a big crop resized into small area along with small crop resized into same area together, fusing
+the network somewhere in the middle and sharing parameters.
+May allow network to learn the relationship between the big picture and details.
+Useful for trees, birds, etc, where the overall shape of the species matters and also the finer patterns.
+
+Works aroudn the limitation of small image sizes.
+
+----
+HD-CNN
+
+Implement HD-CNN when we have too many classes to distinguish.
+
+----
+Rebalance class distribution???
 
 ----
 
@@ -68,10 +86,16 @@ Descent to bottom.
 Deliberate training with mislabeled data - may allow the network to learn to better disambiguate between them
 ---
 
+Fusion of network at a medium level? ie. skip the first conv, but stop before bottleneck.
+
+----
+
 ## Progress reports ##
 
 
 -----ongoing-----
+
+
 
 Display bounding boxes
 
@@ -79,7 +103,7 @@ Apply label splitting
 
 Apply unsupervised bounding box generation
 
-Add web application which allows scaling, cropping, rotating, and also allows uploading from URL
+Add web application which allows uploading from URL
 
 need to put in report the class distribution and number of samples per class.
 
@@ -91,24 +115,33 @@ Get images using google images by searching the species, and use those as a new,
 
 Disable label smoothing
 
-automate label generation and TFRecord generation
-
 Redo input augmentation for inceptionv3 as it is too much cropping - Refinement now
 
-tensorflow using the preprocessed target vector instead of purely labels
-Do this using tf.constant, and tf.gather.
 
 Testing transfer learning on bigger data set
 
+Allow specification of disjoint priors at multiple levels of the hierarchy. E.g. a moth and a spider. 
+- this will allow us to work on a subset of the network, and give it a more generalised audience. 
 
 
 -----done----
+
+automate label generation and TFRecord generation
+
+Add web application which allows scaling, cropping, rotating,
+
+Experiment with training from scratch using hierarchical bootstrapping - this may lead to much faster convergence
+
+Experimented with Hierarchically bootstrapped training
 
 Web app allow specification of prior
 
 Find out way to produce top-k most likely labels.
 
 Adding hierarchy chain to evaluation outputs (needs testing) - hierarchical_eval.py
+
+tensorflow using the preprocessed target vector instead of purely labels
+Do this using tf.constant, and tf.gather.
 
 Apply label spillage. Too slow to train.
 

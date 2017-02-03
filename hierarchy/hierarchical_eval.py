@@ -56,8 +56,64 @@ class LayerEvaluator:
 
         return None
 
-    def dijkstra_threshold(self, output, threshold=0, mindepth=None) -> (float, str):
+    @staticmethod
+    def find_matching_layers(root, output, to_find, found):
+        """
 
+        :param root:
+        :param output:
+        :param to_find:
+        :param found:
+        :return: Returns list of (Probability, Layer | Index)
+        """
+        root, root_name = root
+        if type(root) is not Layer:
+            if root_name in to_find:
+                to_find.remove(root_name)
+                found.append(LayerEvaluator.invariant_sum(root, output), root)
+            
+            return
+
+        for item, name in root.elems:
+            print(item, name)
+            if name in to_find:
+                to_find.remove(name)
+                if type(item) is Layer:
+                    found.append((LayerEvaluator.invariant_sum(item, output), item))
+                else:
+                    found.append((LayerEvaluator.invariant_sum(item, output), item))
+            else:
+                LayerEvaluator.find_matching_layers((item, name), output, to_find, found)
+
+
+    def dijkstra_with_initial_domain(self, domain, output, threshold=0, mindepth=None) -> (float, str):
+        matches = []
+        self.find_matching_layers((self.root, 'init'), output, domain, matches)
+
+        initial_heap = map(lambda tup: (-tup[0], tup[1]) , matches)
+        
+        return self.dijkstra_threshold(output, threshold, mindepth, initial_heap)
+
+    def dijkstra_with_disjoint_domain(self, domain, output, threshold=0, mindepth=None) -> (float, str):
+        matches = []
+        self.find_matching_layers((self.root, 'init'), output, domain, matches)
+
+        initial_heap = map(lambda tup: (-tup[0], tup[1]), matches)
+
+        return self.dijkstra_threshold(output, threshold, mindepth, initial_heap)
+
+
+
+
+    def dijkstra_threshold(self, output, threshold=0, mindepth=None, initial_heap=None) -> (float, str):
+        """
+        Performs dijkstra search, given a minimum confidence threshold to satisfy, a minimum depth
+        :param output: The vector of values to evaluate on
+        :param threshold: Miniumum confidence threshold that must be satisfied by the returned node
+        :param mindepth: Minimum depth that must be satisfied by the returned node
+        :param initial_heap: Initial starting roots.??
+        :return:
+        """
         max_elem = None
 
         return_heap = []  # return heap is tuple of (negative depth, probability, string)
@@ -71,7 +127,8 @@ class LayerEvaluator:
             if max_elem is None or depth > max_elem[0] or (depth == max_elem[0] and prob > max_elem[1]):
                 max_elem = (depth, prob, name)
 
-        heap = []  # heap is tuple of (negative probability, Layer, depth), is minheap.
+        heap = []  
+        # heap is tuple of (negative probability, Layer, depth), is minheap.
         # root_sum = self.root.sum(output)
         # for conditional_probability_neg, item in sorted([(-x.sum(output) / root_sum, x) for x, _ in self.root.elems], key=lambda z: z[0]):
         #     retval = conditional_push((self.initial_depth, -conditional_probability_neg, item.name))
@@ -80,13 +137,18 @@ class LayerEvaluator:
         #     if -conditional_probability_neg > threshold:
         #         heapq.heappush(heap, (conditional_probability_neg, random.random(), item, self.initial_depth)) # use negative for max-heap
         #
-        heapq.heappush(heap, (-1, random.random(), self.root, self.initial_depth - 1))
-
+        if initial_heap is None:
+            initial_item = (-1, random.random(), self.root, self.initial_depth - 1)
+            heapq.heappush(heap, initial_item)
+        else:
+            # print('nopush')
+            for item in initial_heap:
+                heapq.heappush(heap, item)
 
         while len(heap):
             negative_prob, _, lvlnode, depth = heapq.heappop(heap)
             # print(negative_prob, lvlnode)
-
+            # print(lvlnode.elems if type(lvlnode) != int else lvlnode)
             if type(lvlnode) == int:
                 return (-negative_prob, self.definitions[lvlnode], depth)
                 # retval = conditional_push((depth + 1, -negative_prob, self.definitions[lvlnode]))
@@ -115,6 +177,9 @@ class LayerEvaluator:
                     retval = conditional_push((depth + 1, -conditional_probability_neg, item.name))
                     if retval:
                         return retval
+        if max_elem is None:
+            o = self.dijkstra_threshold(output, threshold=00, mindepth=0)
+            return (o[0], o[1], 0)
         return (max_elem[1], max_elem[2], max_elem[0])
         #return None if not len(return_heap) else (return_heap[0][1], return_heap[0][2], -return_heap[0][0])
 
