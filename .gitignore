@@ -1,0 +1,6 @@
+hierarchy/__pycache__
+
+*.dat
+*.csv
+*.jpg
+.idea

@@ -202,7 +202,7 @@ class TaxonomyTree(object):
 
 
 
-    def tree_index_mappings(self, definitions_lists=[], index_mappings=[], depth = 0):
+    def tree_index_mappings(self, definitions_lists, index_mappings, depth = 0):
 
         if len(definitions_lists) <= depth:
             definitions_lists.append([])
