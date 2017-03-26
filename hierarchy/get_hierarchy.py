@@ -5,6 +5,7 @@ import os.path
 import pickle
 from collections import deque
 from typing import Dict, List
+import json
 
 from hierarchy import hierarchical_eval
 from hierarchy.level_evaluate import LevelNode
@@ -133,6 +134,25 @@ class TaxonomyTree(object):
             return new
 
         return self.subtrees[branch_name]
+
+    def hierarchy_hashmap(self):
+      if not len(self.subtrees):
+        return self.name
+      # newmap = set()
+      # for k, v in self.subtrees.:
+      #   newmap[v.get_full_name()] = v.to_hashmap()
+      # newmap['count'] = self.count_at_node
+      return {v.name: v.hierarchy_hashmap() for k, v in self.subtrees.items()}
+
+    def to_hashmap(self):
+        if not len(self.subtrees):
+            return {self.get_full_name(): self.count_at_node}
+        newmap = {}
+        for k, v in self.subtrees.items():
+            newmap[v.get_full_name()] = v.to_hashmap()
+        newmap['count'] = self.count_at_node
+        return newmap
+
 
     def create_chain(self, chain: List[str], accepts_incomplete_chain=True) -> None:
 
@@ -578,8 +598,15 @@ t.prune_by_names(get_20k_label_mappings())
 
 pruned_tree = t
 
+# print(t.hierarchy_hashmap())
+
 def_l, i_m = t.get_tree_index_mappings()
 s = set()
+
+
+
+# print(json.dumps(t.to_hashmap()))
+
 
 # print((def_l))
 # print(len(t.children()))
@@ -609,10 +636,14 @@ def do_plots():
 
     counts = sorted([x.count_at_node for x in t.children()])
 
-    n, bins, patches = pyplot.hist(counts, 6300 // 5)
-    pyplot.plot(bins)
+    n, bins, patches = pyplot.hist(counts, 6300 // 20)
+    pyplot.xlabel('Number of images per class')
+    pyplot.ylabel('Number of classes')
+    # pyplot.plot(n)
     pyplot.show()
     print('z')
+    print(n)
+    print('zz')
 
     BIN_SIZE = 5
     total = t.count_at_node
@@ -627,14 +658,13 @@ def do_plots():
     for i in range(0, len(bins)):
         cumulative += bins[i]
         bins[i] = cumulative / total
-
-
     print(bins)
-
-
     pyplot.plot(range(0, (num_bins) * BIN_SIZE, BIN_SIZE), bins)
+    pyplot.xlabel('Number of images per class')
+    pyplot.ylabel('Cumulative fraction of total dataset represented')
     pyplot.show()
 
+# do_plots()
 # print((i_m))
 #
 # print(translate_to_level(i_m, 0, 2061))

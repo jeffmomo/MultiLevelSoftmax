@@ -5,7 +5,7 @@ import random
 
 class LayerEvaluator:
 
-    def __init__(self, layer, definitions, conditionals = []):
+    def __init__(self, layer, definitions, conditionals=list()):
         self.root = layer
         self.definitions = definitions
         self.initial_depth = len(conditionals)
@@ -188,6 +188,7 @@ class Layer:
     def __init__(self, elems: list, name: str):
         self.elems = elems
         self.name = name
+        self.cached_children = None
 
     def listify(self):
         if type(self.elems[0]) != Layer:
@@ -201,10 +202,12 @@ class Layer:
         return type(self.elems[0][0]) != Layer
 
     def getChildren(self):
-
-        #if type(self.elems[0][0]) != Layer:
-        #    return self.elems
-        return reduce(lambda a, b: a + b, [x.getChildren() if type(x) == Layer else [(x, name)] for (x, name) in self.elems], [])
+        if not self.cached_children:
+            ls = []
+            for x in [x.getChildren() if type(x) == Layer else [(x, name)] for (x, name) in self.elems]:
+                ls.extend(x)
+            self.cached_children = ls # reduce(lambda a, b: a + b, , [])
+        return self.cached_children
 
     def sum(self, output):
         summation = 0
