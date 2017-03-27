@@ -34,7 +34,7 @@ class FIFOAdapter:
 
     def write(self, content):
         print('about to write...' + content)
-        outpipe = open(self.out_resource, 'w')
+        outpipe = open(self.out_resource, 'w', buffering=0)
         outpipe.write(content + '>>>EOF<<<')
         outpipe.close()
 
