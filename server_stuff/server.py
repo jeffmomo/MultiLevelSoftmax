@@ -144,7 +144,7 @@ def do_app():
 
     @app.route("/classify")
     def send_upload_view():
-        return classified_view_template
+        return upload_view_template
 
     @app.route('/classify-upload', methods=['POST'])
     def upload():
