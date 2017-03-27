@@ -8,7 +8,7 @@ import base64
 import threading
 import sys
 
-IO_adapter = FIFOAdapter.FIFOAdapter()
+IO_adapter = FIFOAdapter.FIFOAdapter('/home/jeff/Workspace/MultiLevelSoftmax/outpipe', '/home/jeff/Workspace/MultiLevelSoftmax/pipe')
 
 
 '''
