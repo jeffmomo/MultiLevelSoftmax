@@ -39,7 +39,7 @@ class FIFOAdapter:
         pass
 
     def read(self):
-        return open(self.in_resource, 'r').read()
+        return open(self.in_resource, 'r', encoding='utf-8').read()
         pass
 
 

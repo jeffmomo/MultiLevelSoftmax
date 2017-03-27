@@ -4,9 +4,11 @@ from flask import request
 from transformers import FIFOAdapter
 from functools import *
 from typing import Dict
-import aiofiles
 import base64
 import threading
+import sys
+
+IO_adapter = FIFOAdapter.FIFOAdapter()
 
 
 '''
@@ -46,20 +48,6 @@ fs.open('/home/jeff/Workspace/MultiLevelSoftmax/outpipe', 'r', (err, file) => {
 '''
 
 
-def test():
-    while True:
-        print(IO_adapter.read())
-
-
-
-threading.Thread(target=test).start()
-
-
-import asyncio
-from asyncio import StreamReader
-
-IO_adapter = FIFOAdapter.FIFOAdapter()
-
 # async def scrape_for_input(num, loop, ):
 #     file = aiofiles.open('', 'r', encoding='utf-8')
 #     async for line in file:
@@ -92,10 +80,9 @@ IO_adapter = FIFOAdapter.FIFOAdapter()
 # loop.run_forever()
 
 
+classified_view_template = open('classified_view.html', 'r').read()
+upload_view_template = open('upload_view.html', 'r').read()
 
-
-
-classified_view_template = 'VIWE TEMPLSTE'
 
 app = Flask(__name__)
 
@@ -109,11 +96,35 @@ def do_app():
     num_dequeued = 0
     last_dequeue = 0
 
-    def read_pipe():
-        pass
+    def input_scraper():
+        nonlocal num_dequeued
+
+        while True:
+            try:
+                in_str = IO_adapter.read()
+                incoming_classification = in_str.split(',')
+                index = incoming_classification[5]
+
+                incoming_classification[-1] = incoming_classification[-1].replace(IO_adapter.EOF_SEPARATOR, '')
+
+                if index in waiting:
+                    waiting[index](incoming_classification)
+                    del waiting[index]
+                else:
+                    classified[index] = incoming_classification
+
+                num_dequeued += 1
+            except Exception as e:
+                print(e, file=sys.stderr)
+
+    threading.Thread(target=input_scraper).start()
+
 
     def fill(fillers: Dict[str, str], template: str):
         return reduce(lambda accum, k_v: template.replace('{{' + k_v[0] + '}}', k_v[1]), fillers.items(), template)
+
+    def write_pipe(imgIndex, content, priors=''):
+        IO_adapter.write(content + '>>>INDEX<<<' + imgIndex + '|' + priors + IO_adapter.EOF_SEPARATOR)
 
     @app.route("/waiting/<wait_on_label>")
     def wait_on_classification(wait_on_label):
@@ -131,14 +142,11 @@ def do_app():
         else:
             waiting[wait_on_label] = on_available_fn
 
-    def write_pipe(imgIndex, content, priors=''):
-        IO_adapter.write(content + '>>>INDEX<<<' + imgIndex + '|' + priors + IO_adapter.EOF_SEPARATOR)
-
     @app.route("/classify")
-    def hello():
-        return "Hello World!"
+    def send_upload_view():
+        return classified_view_template
 
-    @app.route('/upload', methods=['POST'])
+    @app.route('/classify-upload', methods=['POST'])
     def upload():
 
         nonlocal img_index, num_enqueued, last_dequeue
@@ -167,7 +175,6 @@ def do_app():
                     classified_view_template)
 
 do_app()
-
 if __name__ == "__main__":
     app.run(port=8080)
     pass
