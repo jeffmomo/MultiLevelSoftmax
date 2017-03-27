@@ -124,7 +124,7 @@ def do_app():
         return reduce(lambda accum, k_v: template.replace('{{' + k_v[0] + '}}', k_v[1]), fillers.items(), template)
 
     def write_pipe(imgIndex, content, priors=''):
-        IO_adapter.write(content + IO_adapter.INDEX_SEPARATOR + imgIndex + '|' + priors + IO_adapter.EOF_SEPARATOR)
+        IO_adapter.write(content + IO_adapter.INDEX_SEPARATOR + str(imgIndex) + '|' + priors + IO_adapter.EOF_SEPARATOR)
 
     @app.route("/waiting/<wait_on_label>")
     def wait_on_classification(wait_on_label):
