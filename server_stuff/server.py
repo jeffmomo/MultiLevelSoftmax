@@ -159,7 +159,6 @@ def do_app():
 
         write_pipe(img_index, base64_img, json_body['priors'] if 'priors' in json_body else '')
         print('written')
-        print(json_body['priors'])
 
         saved_img_index = img_index
 
