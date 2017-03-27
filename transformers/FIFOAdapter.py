@@ -33,10 +33,11 @@ class FIFOAdapter:
         pass
 
     def write(self, content):
+        print('about to write...' + content)
         outpipe = open(self.out_resource, 'w')
         outpipe.write(content + '>>>EOF<<<')
         outpipe.close()
-        pass
+
 
     def read(self):
         return open(self.in_resource, 'r', encoding='utf-8').read()

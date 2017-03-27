@@ -124,7 +124,7 @@ def do_app():
         return reduce(lambda accum, k_v: template.replace('{{' + k_v[0] + '}}', k_v[1]), fillers.items(), template)
 
     def write_pipe(imgIndex, content, priors=''):
-        IO_adapter.write(content + IO_adapter.INDEX_SEPARATOR + str(imgIndex) + '|' + priors + IO_adapter.EOF_SEPARATOR)
+        IO_adapter.write(content + IO_adapter.INDEX_SEPARATOR + str(imgIndex) + '|' + priors)
 
     @app.route("/waiting/<wait_on_label>")
     def wait_on_classification(wait_on_label):
@@ -158,7 +158,7 @@ def do_app():
             base64_img = json_body['image_base64'].split(',')[1]
 
         write_pipe(img_index, base64_img, json_body['priors'] if 'priors' in json_body else '')
-
+        print('written')
         print(json_body['priors'])
 
         saved_img_index = img_index
