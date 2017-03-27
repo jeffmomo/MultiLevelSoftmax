@@ -148,10 +148,9 @@ def do_app():
 
     @app.route('/classify-upload', methods=['POST'])
     def upload():
-
         nonlocal img_index, num_enqueued, last_dequeue
 
-        json_body = jsonify(request.get_json(force=True))
+        json_body = jsonify(request.get_json(force=True, silent=True))
 
         if 'file' in request.files:
             base64_img = base64.standard_b64decode(request.files['file'].read())
