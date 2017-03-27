@@ -150,10 +150,10 @@ def do_app():
     def upload():
         nonlocal img_index, num_enqueued, last_dequeue
 
-        json_body = jsonify(request.get_json(force=True, silent=True))
+        json_body = request.get_json(force=True, silent=True) or {}
 
-        if 'file' in request.files:
-            base64_img = base64.standard_b64decode(request.files['file'].read())
+        if 'example' in request.files:
+            base64_img = base64.standard_b64decode(request.files['example'].read())
         else:
             base64_img = json_body['image_base64'].split(',')[1]
 
