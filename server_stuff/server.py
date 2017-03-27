@@ -121,7 +121,7 @@ def do_app():
 
 
     def fill(fillers: Dict[str, str], template: str):
-        return reduce(lambda accum, k_v: template.replace('{{' + k_v[0] + '}}', k_v[1]), fillers.items(), template)
+        return reduce(lambda accum, k_v: template.replace('{{' + str(k_v[0]) + '}}', str(k_v[1])), fillers.items(), template)
 
     def write_pipe(imgIndex, content, priors=''):
         IO_adapter.write(content + IO_adapter.INDEX_SEPARATOR + str(imgIndex) + '|' + priors)
