@@ -1,29 +1,21 @@
 import math
 import os
 import sys
+from transformers import FIFOAdapter
 
 from hierarchy import hierarchical_eval, get_hierarchy
 
 ###########
 
 
-tree = get_hierarchy.generate_tree()
-tree.prune(threshold=100)
+tree = get_hierarchy.pruned_tree
 definitions_list = []
 tree.get_definitions(definitions_list)
-# print(definitions_list)
-print(len(definitions_list))
-
 tree.assign_indices(definitions_list)
-
 
 
 mapping = {}
 layer, _ = tree.generate_layer(mapping)
-print("map size", len(mapping))
-
-# print(layer.listify())
-#print(layer.getChildren())
 
 reverse_tree = {}
 tree.generate_reverse_tree(reverse_tree, leaf_only=False)
@@ -57,7 +49,6 @@ for line in sys.stdin:
         print(values)
         continue
 
-    print('gucc')
     splitted = values[1:].split('|')
     data = [float(f) for f in splitted[0].split(',')[1:]]
     data_exp_sum = sum([math.exp(x) for x in data])
@@ -69,7 +60,6 @@ for line in sys.stdin:
         top5.append(name)
         top5.append(prob)
     print(top5)
-
 
 
     index = int(splitted[1])
