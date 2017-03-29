@@ -69,7 +69,7 @@ document.getElementById("fileInput").onchange = function () {
         document.getElementById("image").src = e.target.result;
     };
 
-    // read the image file as a data URL.
+    // poll the image file as a data URL.
     reader.readAsDataURL(this.files[0]);
 };
 

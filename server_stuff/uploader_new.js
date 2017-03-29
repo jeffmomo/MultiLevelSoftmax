@@ -1,4 +1,5 @@
 const fs = require('fs');
+const Adapter = require('./adapter');
 
 let imgIndex = 0;
 
@@ -10,118 +11,84 @@ let numEnqueued = 0;
 let numDequeued = 0;
 let lastDequeue = 0;
 
-function readPipe() {
-	fs.open('./output_pipe.fifopipe', 'r', (err, file) => {
-		if(err) {
-			console.log(err);
 
-			return fs.close(file, (err, done) => 
-			{
-				readPipe();
-			});
-		}
+const adapter = new Adapter('/home/jeff/Workspace/models/slim/done_pipe.fifopipe', '/home/jeff/Workspace/models/slim/classify_pipe.fifopipe');
 
-		fs.readFile(file, (err, content) => {
-			// TODO: It is possible that given tiny images the pipe may contain multiple classifications. Deal with this later
-			if(err)
-				console.log(err)
+function pollCallback(content) {
+    const contentString = content.toString('utf-8');
+    const splitted = contentString.split(",");
+    // (leaf_prob, leaf, dijkstra_prob, dijkstra_node, dijkstra_lvl, index, img_data, _, name, prob, name, prob, name, prob, name, prob, name, prob)
 
-			const contentString = content.toString('utf-8');
-			const splitted = contentString.split(",");
-			// (leaf_prob, leaf, dijkstra_prob, dijkstra_node, dijkstra_lvl, index, img_data, _, name, prob, name, prob, name, prob, name, prob, name, prob)
-            
-            const index = splitted[5];
-            splitted[splitted.length - 1] = splitted[splitted.length - 1].replace('>>>EOF<<<', '');
-            
-            if(awaitings[index]) {
-                awaitings[index](splitted);
-                delete awaitings[index];
-            } else {
-			    classified[index] = splitted;
-            }
+    const index = splitted[5];
+    splitted[splitted.length - 1] = splitted[splitted.length - 1].replace('>>>EOF<<<', '');
 
-            numDequeued += 1;
+    if (awaitings[index]) {
+        awaitings[index](splitted);
+        delete awaitings[index];
+    } else {
+        classified[index] = splitted;
+    }
 
-            readPipe();
-		})
-	});
+    numDequeued += 1;
 }
 
+function doPoll() {
+    adapter.poll(pollCallback());
+}
 
 
 function writePipe(imgIndex, content, priors = '') {
-	const file = fs.openSync('/home/jeff/Workspace/models/slim/classify_pipe.fifopipe', 'w');
-    fs.writeSync(file, content + '>>>INDEX<<<' + imgIndex + '|' + priors + '>>>EOF<<<');
-    fs.closeSync(file);
+    adapter.write(content + adapter.INDEX_SEPARATOR + imgIndex + '|' + priors + adapter.EOF_SEPARATOR);
 }
 
 function fill(template, fillers) {
-	return Object.keys(fillers).reduce((accum, a) => {
-		return accum.split('{{' + a + '}}').join(fillers[a]);
-	}, template)
+    return Object.keys(fillers).reduce((accum, a) => {
+        return accum.split('{{' + a + '}}').join(fillers[a]);
+    }, template)
 }
 
 
 function upload(req, res) {
-	// console.log(req.file.buffer.toString('base64'));
-
-	// console.log(req.body);
-
     // handle cases where no image provided.. 
     const base64Img = req.file ? req.file.buffer.toString('base64') : req.body.image_base64.split(',')[1];
 
-    // console.log(base64Img === req.file.buffer.toString('base64'));
+    writePipe(imgIndex, base64Img, req.body.priors ? req.body.priors : '');
 
+    const savedImgIndex = imgIndex;
+    imgIndex += 1;
+    numEnqueued += 1;
 
-	writePipe(imgIndex, base64Img, req.body.priors ? req.body.priors : '');
-	console.log(req.body.priors);
+    fs.readFile('./classified_view.html', {encoding: 'utf-8'}, (err, contents) => {
+        const queued = numEnqueued - lastDequeue - 1;
+        const timeRemaining = queued * 0.5;
 
-	const savedImgIndex = imgIndex;
-	imgIndex += 1;
+        const body = fill(contents, {queued, timeRemaining, imgIndex: savedImgIndex});
 
-	console.log(imgIndex);
-
-	numEnqueued += 1;
-
-	fs.readFile('./classified_view.html', {encoding: 'utf-8'}, (err, contents) => {
-		const queued = numEnqueued - lastDequeue - 1;
-		const timeRemaining = queued * 0.5;
-
-		const body = fill(contents, {queued, timeRemaining, imgIndex: savedImgIndex});
-		
-
-		res.send(body);
-	});
+        res.send(body);
+    });
 }
 
 function waitOnClassification(req, res) {
-
     const waitingOnLabel = req.params.label;
-    
-    
+
     const onAvailableFn = (result) => {
         lastDequeue = parseInt(result[5]);
         console.log('available');
         res.json(result);
     };
 
-    if(classified[waitingOnLabel]) {
-        console.log('classification already available'); 
-        
+    if (classified[waitingOnLabel]) {
         onAvailableFn(classified[waitingOnLabel]);
         delete classified[waitingOnLabel];
-
     } else {
-
         awaitings[waitingOnLabel] = onAvailableFn;
 
     }
 
 }
 
-
 module.exports = {
-	upload: upload,
-	readPipe: readPipe,
+    upload: upload,
+    poll: doPoll,
     waitingOnClassification: waitOnClassification,
-}
+};

@@ -1,6 +1,3 @@
-from flask import Flask
-from flask import jsonify
-from flask import request
 from transformers import FIFOAdapter
 from functools import *
 from typing import Dict
@@ -83,8 +80,16 @@ fs.open('/home/jeff/Workspace/MultiLevelSoftmax/outpipe', 'r', (err, file) => {
 classified_view_template = open('classified_view.html', 'r').read()
 upload_view_template = open('upload_view.html', 'r').read()
 
+from sanic import Sanic
+from sanic.response import text
 
-app = Flask(__name__)
+app = Sanic()
+
+
+@app.route("/")
+async def hello(request):
+    return text("Hello World!")
+
 
 def do_app():
     img_index = 0
@@ -121,7 +126,7 @@ def do_app():
 
 
     def fill(fillers: Dict[str, str], template: str):
-        return reduce(lambda accum, k_v: template.replace('{{' + str(k_v[0]) + '}}', str(k_v[1])), fillers.items(), template)
+        return reduce(lambda accum, k_v: accum.replace('{{' + k_v[0] + '}}', str(k_v[1])), fillers.items(), template)
 
     def write_pipe(imgIndex, content, priors=''):
         IO_adapter.write(content + IO_adapter.INDEX_SEPARATOR + str(imgIndex) + '|' + priors)
@@ -153,7 +158,7 @@ def do_app():
         json_body = request.get_json(force=True, silent=True) or {}
 
         if 'example' in request.files:
-            base64_img = str(base64.standard_b64encode(request.files['example'].read()), encoding='utf-8') # str(base64.standard_b64decode(request.files['example'].read()), encoding='utf-8')
+            base64_img = str(base64.standard_b64encode(request.files['example'].read()), encoding='utf-8') # str(base64.standard_b64decode(request.files['example'].poll()), encoding='utf-8')
         else:
             base64_img = json_body['image_base64'].split(',')[1]
 
