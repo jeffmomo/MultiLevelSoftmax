@@ -41,8 +41,11 @@ class FIFOAdapter {
             }
 
             fs.write(file, content, (err, done) => {
+                if (!err) {
+                    fs.close(file);
+                }
+
                 callback(err, done);
-                fs.close(file);
             });
         });
     }
