@@ -3,8 +3,8 @@ const Adapter = require('./Adapter');
 
 class FIFOAdapter extends Adapter {
 
-    INDEX_SEPARATOR = '>>>INDEX<<<';
-    EOF_SEPARATOR = '>>>EOF<<<';
+    static INDEX_SEPARATOR = '>>>INDEX<<<';
+    static EOF_SEPARATOR = '>>>EOF<<<';
 
     constructor(towards_webserver_resource, towards_classifier_resource) {
         this.towards_webserver_resource = towards_webserver_resource;
