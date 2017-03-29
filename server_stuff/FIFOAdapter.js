@@ -1,5 +1,5 @@
 const fs = require('fs');
-const Adapter = require('./adapter');
+const Adapter = require('./Adapter');
 
 class FIFOAdapter extends Adapter {
 
