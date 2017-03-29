@@ -1,5 +1,5 @@
 const fs = require('fs');
-const Adapter = require('./adapter');
+const Adapter = require('./FIFOAdapter');
 
 let imgIndex = 0;
 
