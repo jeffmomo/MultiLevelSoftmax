@@ -1,9 +1,6 @@
 const fs = require('fs');
-const Adapter = require('./Adapter');
 
-class FIFOAdapter extends Adapter {
-
-
+class FIFOAdapter {
 
     constructor(towards_webserver_resource, towards_classifier_resource) {
         this.INDEX_SEPARATOR = '>>>INDEX<<<';
