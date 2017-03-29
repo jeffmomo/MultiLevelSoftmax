@@ -33,7 +33,7 @@ function pollCallback(content) {
 }
 
 function doPoll() {
-    adapter.poll(pollCallback());
+    adapter.poll(pollCallback);
 }
 
 
