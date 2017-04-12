@@ -1,6 +1,7 @@
 hierarchy/__pycache__
-
+node_modules
 *.dat
 *.csv
 *.jpg
 .idea
+transformers/__pycache__

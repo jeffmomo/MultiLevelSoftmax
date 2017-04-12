@@ -33,7 +33,7 @@ class FIFOAdapter {
         });
     }
 
-    write(content, callback) {
+    write(content, callback = () => {}) {
         fs.open(this.towards_classifier_resource, 'w', (err, file) => {
 
             if (err) {

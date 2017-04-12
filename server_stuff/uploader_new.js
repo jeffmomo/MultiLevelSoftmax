@@ -82,9 +82,7 @@ function waitOnClassification(req, res) {
         delete classified[waitingOnLabel];
     } else {
         awaitings[waitingOnLabel] = onAvailableFn;
-
     }
-
 }
 
 module.exports = {

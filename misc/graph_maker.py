@@ -19,7 +19,9 @@ counts = stats.count_per_class
 aplpc = stats.accuracies_per_level_per_class
 naplpc = stats.normal_accuracies_per_level_per_class
 
-multistats = [list(x.accuracy_per_class.values()) for x in [pickle.load(open(x, 'rb')) for x in sys.argv[1:]]]
+multiacc = [x.accuracy_per_class for x in [pickle.load(open(x, 'rb')) for x in sys.argv[1:]]]
+multicount = [x.count_per_class for x in [pickle.load(open(x, 'rb')) for x in sys.argv[1:]]]
+
 
 print(len(counts.values()))
 
@@ -42,16 +44,61 @@ def show_histograms():
     pyplot.ylabel('Number of classes')
     pyplot.show()
 
+
+def do_get_small_class_acc(idx, between=(0, 20), count_source=None):
+  total = 0.0
+  num_correct = 0.0
+
+  classes_with_fewer_than = ([x for x in filter(lambda x: x[1] < between[1] and x[1] >= between[0], count_source.items())])
+  for x in classes_with_fewer_than:
+    # if x[0] in multiacc[idx]:
+    total += (x[1] if not count_source else count_source[x[0]])
+    num_correct += multiacc[idx][x[0]] * (x[1] if not count_source else count_source[x[0]])
+    # print(num_correct)
+
+  num_correct = num_correct / (total + 0.01)
+  print(num_correct, total)
+  print(len(multicount[idx]), len(classes_with_fewer_than), len(count_source), sum(count_source.values()))
+  return num_correct
+
 def show_multi_hist():
   pyplot.xticks(numpy.arange(0, 1.0001, 0.1))
-  pyplot.hist(multistats, color=['r', 'g', 'b'], bins=10, range=(0, 1), label=['Base network', 'Multi-view', 'Multi-view and hierarchical knowledge transfer'])
+  pyplot.hist([list(x.values()) for x in multiacc], color=['r', 'g', 'b'], bins=10, range=(0, 1), label=['Base network', 'Multi-view', 'Multi-view and hierarchical knowledge transfer'])
   pyplot.legend(loc='upper right')
   pyplot.xlabel('Accuracy')
   pyplot.ylabel('Number of classes')
   pyplot.show()
 
+def show_small_class_compare():
+  ranges = list(range(0, 1000, 80))
 
+  count_source = multicount[2]
+
+  # print(count_source)
+
+  small_multiview = []
+  small_multistage = []
+  small_normal = []
+  for i in range(0, len(ranges) - 1):
+    small_normal.append(do_get_small_class_acc(0, between=(ranges[i], ranges[i+1]), count_source=count_source))
+    small_multiview.append(do_get_small_class_acc(1, between=(ranges[i], ranges[i+1]), count_source=count_source))
+    small_multistage.append(do_get_small_class_acc(2, between=(ranges[i], ranges[i+1]), count_source=count_source))
+
+  ranges = ranges[:-1]
+  # pyplot.plot([ranges, ranges], [small_multiview, small_multistage])
+  pyplot.plot(ranges, small_normal, label='Base network') # , 'Multi-view', 'Multi-view and hierarchical knowledge transfer']
+  pyplot.plot(ranges, small_multiview, label='Multi-view')
+  pyplot.plot(ranges, small_multistage, label='Multi-view and hierarchical knowledge transfer')
+  pyplot.legend(loc='lower right')
+  pyplot.xlabel('Number of images per class')
+  pyplot.ylabel('Accuracy per class')
+  pyplot.show()
+
+
+show_small_class_compare()
 truncated_counts = {k: counts[k] for k in acc.keys()}
+
+
 
 
 def show_scatter():
@@ -62,6 +109,7 @@ def show_scatter():
   # p = numpy.poly1d(line)
   # pyplot.plot(scatterx, p(scatterx), 'r-')
   pyplot.show()
+# show_scatter()
 
 # show_histograms()
 # show_scatter()

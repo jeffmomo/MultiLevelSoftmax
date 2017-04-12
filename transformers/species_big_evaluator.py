@@ -14,6 +14,8 @@ definitions_list = []
 
 histogramout = open('histogram.dat', 'w+')
 
+accuracy_depth_file = open('thresholds.dat', 'w+')
+
 layer_correct = {}
 layer_total = {}
 layer_class_correct = {}
@@ -43,6 +45,7 @@ tree.generate_reverse_tree(reverse_tree, leaf_only=False)
 count_map = {child.get_full_name(): child.count_at_node for child in tree.children()}
 correct_map = {}
 total_map = {}
+automatic_specificity_depth_map = {}
 
 total_per_class_map = [{} for x in range(0, 7)]
 correct_dijskstra_per_class = [{} for x in range(0, 7)]
@@ -83,10 +86,13 @@ def finish_up():
                       range(0, len(total_per_class_map))]
 
   # print(total_map, correct_map, accuracy_map, per_level_dijkstra, per_level_normal)
-  print(per_level_dijkstra)
+  # print(per_level_dijkstra)
   import pickle
-  pickle.dump(Stats(accuracy_map, count_map, per_level_dijkstra, per_level_normal), open('stats.pickle', 'wb'))
+  pickle.dump(Stats(accuracy_map, total_map, per_level_dijkstra, per_level_normal), open('stats.pickle', 'wb'))
+  pickle.dump(automatic_specificity_depth_map, open('automatic_specificity_map.pickle', 'wb'))
 
+
+  accuracy_depth_file.close()
   quit()
 
 
@@ -131,7 +137,8 @@ class MovingAverage:
 labelmap = {}
 evaluator = hierarchical_eval.LayerEvaluator(layer, definitions_list)
 
-learning_rate = 0.01
+LEARNING_RATE_INITIAL = 0.01
+learning_rate = LEARNING_RATE_INITIAL
 LEARNING_RATE_DEPTH = 0.001
 threshold = 0.9
 TARGET_ACCURACY = 0.9
@@ -140,7 +147,12 @@ eps = 0.01
 OPTIMISE_SET = 100000
 PRINT_PER = 100
 
-per_instance_decay = 0.00003
+SWITCH_EVERY_EXAMPLES = 20000
+target_accuracies = [0.5, 0.6, 0.7, 0.8, 0.9, 0.92, 0.94, 0.96, 0.98, 0.99]
+current_accuracy_index = 0
+# TARGET_ACCURACY = target_accuracies[current_accuracy_index]
+
+per_instance_decay = (1.0 / OPTIMISE_SET) * 3.0 # 0.00003
 
 moving_avg = MovingAverage(100)
 moving_depth = MovingAverage(100)
@@ -153,7 +165,7 @@ moving_thresh_value = 1.0
 while True:
 
   # test HERE ------------------------------------------------------------------------------------------------------
-  if IS_TEST and total_count >= 100:
+  if IS_TEST and total_count >= 1000:
     finish_up()
 
   vals = get_relevant_input()
@@ -223,20 +235,14 @@ while True:
 
   if label == idx_of_max:
     correct_count += 1
-
-  predicted_name = thresh_result[1]
-
-  total_map[actual_name] = total_map.get(actual_name, 0) + 1
-  if predicted_name == actual_name:
     correct_map[actual_name] = correct_map.get(actual_name, 0) + 1
 
-  # tree_output = []
-  # reverse_tree_predicted = reverse_tree[predicted_name]
-  # reverse_tree_actual = reverse_tree[actual_name]
-  # for i in range(-1, -min(len(reverse_tree_actual), len(reverse_tree_predicted)) - 1, -1):
-  #     tree_output.append((reverse_tree_predicted[i].split(tree.join_character)[1]) + ',' + (reverse_tree_actual[i].split(tree.join_character)[1]))
-  # htmlout.write('|'.join([filename, predicted_name, actual_name, '#'.join(tree_output), str(thresh_result[0]), str(thresh_result[1] in label_reverse_tree), str(thresh_result[2])]) + "\n")
-  # htmlout.flush()
+  dijkstra_predicted_name = thresh_result[1]
+
+  automatic_specificity_depth_map[actual_name] = automatic_specificity_depth_map.get(actual_name, 0) + thresh_result[2]
+
+  total_map[actual_name] = total_map.get(actual_name, 0) + 1
+
 
   thresh_accuracy = correct_z_count / total_count
 
@@ -257,17 +263,35 @@ while True:
     print('dijkstra', correct_d_count / total_count)
     print('normal', correct_count / total_count)
     print('thresh', thresh_accuracy)
-    print('avg level', total_depth / total_count)
+    print('avg depth', total_depth / total_count)
 
     print('moving_acc', moving_acc_value)
     print('moving depth', moving_depth_value)
     print('moving thresh', moving_thresh_value)
     print('gradient', d)
     print("current threshold", threshold)
+    print("target accuracy", TARGET_ACCURACY)
 
     print('learning rate', learning_rate)
 
     print('total count', total_count)
+
+  # threshold = thresholds[int(total_count) // SWITCH_EVERY_EXAMPLES]
+
+  # if int(total_count) == SWITCH_EVERY_EXAMPLES:
+  #   accuracy_depth_file.write(','.join([str(thresh_accuracy), str(total_depth / total_count)]) + '\n')
+  #   current_accuracy_index += 1
+  #   if current_accuracy_index == len(target_accuracies):
+  #     finish_up()
+  #   TARGET_ACCURACY = target_accuracies[current_accuracy_index]
+  #   total_count = 0
+  #   correct_count = 0
+  #   correct_z_count = 0
+  #   total_depth = 0
+  #   learning_rate = LEARNING_RATE_INITIAL
+
+  print('total', total_count)
+  print('correct', correct_count)
 
   if int(total_count) == OPTIMISE_SET:
     total_count = 0
