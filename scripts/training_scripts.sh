@@ -1,3 +1,13 @@
+# To create the training dataset, have a folder of folders whose name is the classes, with each folder containing images of that class. 
+# Then run this script
+python convert_data_folder --train_dir <training_directory> [--output_directory <output_dir>] [--validation_num <number of images in validation>]
+
+# Run this for help
+python convert_data_folder --help
+
+
+
+
 # To train the standard classifier
 python train_image_classifier.py --train_dir=/home/jeff/Workspace/tmp/species_big_restored_train \
 --dataset_dir=/media/jeff/9566f510-ddf5-468b-a0fb-1d10bd7fabca/data_dir --dataset_split_name=train \
