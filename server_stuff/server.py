@@ -4,8 +4,9 @@ from typing import Dict
 import base64
 import threading
 import sys
+from os import path
 
-IO_adapter = FIFOAdapter.FIFOAdapter('/home/jeff/Workspace/MultiLevelSoftmax/outpipe', '/home/jeff/Workspace/MultiLevelSoftmax/pipe')
+IO_adapter = FIFOAdapter.FIFOAdapter(path.expanduser('~/Workspace/MultiLevelSoftmax/outpipe'), path.expanduser('~/Workspace/MultiLevelSoftmax/pipe'))
 
 
 '''

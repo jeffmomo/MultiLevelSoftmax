@@ -1,13 +1,21 @@
 import math
 import os
 import sys
-
+import argparse
 from hierarchy import hierarchical_eval, get_hierarchy
 
 ###########
 
 
-tree = get_hierarchy.pruned_tree
+parser = argparse.ArgumentParser()
+parser.add_argument('--labels', help='Where to load labels txt file from')
+args = parser.parse_args()
+
+t = get_hierarchy.generate_tree()
+t.prune(threshold=5)
+t.prune_by_names(get_hierarchy.get_20k_label_mappings(args.labels))
+
+tree = t
 definitions_list = []
 tree.get_definitions(definitions_list)
 # print(definitions_list)
@@ -34,7 +42,7 @@ evaluator = hierarchical_eval.LayerEvaluator(layer, definitions_list)
 #pipe stuff here#
 #################
 
-TO_WEB_SERVER_PIPE = '/home/jeff/Workspace/models/slim/done_pipe.fifopipe'
+TO_WEB_SERVER_PIPE = os.path.expanduser('~/done_pipe.fifopipe')
 
 try:
   os.mkfifo(TO_WEB_SERVER_PIPE)
@@ -47,7 +55,7 @@ def pipe_write(content):
   outpipe.close()
 ###
 
-label_map = get_hierarchy.native_to_hierarchical_translation_map(tree)
+label_map = get_hierarchy.native_to_hierarchical_translation_map(tree, args.labels)
 
 for line in sys.stdin:
     values = line

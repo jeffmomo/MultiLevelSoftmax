@@ -1,5 +1,6 @@
 const fs = require('fs');
 const Adapter = require('./FIFOAdapter');
+const os = require('os');
 
 let imgIndex = 0;
 
@@ -11,10 +12,12 @@ let numEnqueued = 0;
 let numDequeued = 0;
 let lastDequeue = 0;
 
+const homedir = os.homedir()
 
-const adapter = new Adapter('/home/jeff/Workspace/models/slim/done_pipe.fifopipe', '/home/jeff/Workspace/models/slim/classify_pipe.fifopipe');
+const adapter = new Adapter(homedir + '/done_pipe.fifopipe', homedir + '/classify_pipe.fifopipe');
 
 function pollCallback(content) {
+    console.log('well somehting came through')
     const contentString = content.toString('utf-8');
     const splitted = contentString.split(",");
     // (leaf_prob, leaf, dijkstra_prob, dijkstra_node, dijkstra_lvl, index, img_data, _, name, prob, name, prob, name, prob, name, prob, name, prob)

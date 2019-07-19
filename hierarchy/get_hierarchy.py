@@ -6,6 +6,9 @@ import pickle
 from collections import deque
 from typing import Dict, List
 import json
+import os
+from tqdm import tqdm
+import argparse
 
 from hierarchy import hierarchical_eval
 from hierarchy.level_evaluate import LevelNode
@@ -506,27 +509,35 @@ def generate_tree(nz_only=False):
         t = pickle.load(open('hierarchy_file.dat', 'rb'))
     else:
         t = TaxonomyTree('init')
-        f = open('/home/jeff/Workspace/MultiLevelSoftmax/observations.csv', 'r')
+        f = open(os.path.expanduser('~/observations.csv'), 'r')
         count = 0
-        # gets rid of headers
-        f.readline()
-        csv_file = csv.reader(f, delimiter=',', quotechar='"')
-        for line in csv_file:
-            is_NZ = line[21] == "NZ"
+        csv_file = csv.DictReader(f, delimiter=',', quotechar='"')
+        for row in tqdm(csv_file):
+            is_NZ = row['countryCode'] == "NZ"
 
             if nz_only and not is_NZ:
                 continue
-                
-            splitted = line[26:34]
 
-            if any([True for x in splitted if x == '']):
-                print('gap in hierarchy: ' + ', '.join(splitted))
+            taxo_names = [
+                    row['scientificName'],
+                    row['taxonRank'],
+                    row['kingdom'],
+                    row['phylum'],
+                    row['class'],
+                    row['order'],
+                    row['family'],
+                    row['genus'],
+                ]
+
+            name, t_rank, kingdom, phylum, cls, order, family, genus = taxo_names
+
+            if not all(taxo_names):
+                # print('gap in hierarchy: ' + ', '.join(taxo_names), end='\r')
                 skipped_count += 1
                 continue
 
-            name, t_rank, kingdom, phylum, cls, order, family, genus = [x.lower() for x in splitted]
             if 'species' not in t_rank:
-                print('strange taxonomy definition')
+                # print('strange taxonomy definition', t_rank, end='\r')
                 skipped_count += 1
                 continue
 
@@ -548,8 +559,8 @@ def generate_tree(nz_only=False):
 # test()
 # generate_data(generate_tree())
 
-def native_to_hierarchical_translation_map(tree: TaxonomyTree):
-    native = get_20k_label_mappings()
+def native_to_hierarchical_translation_map(tree: TaxonomyTree, labels_path: str):
+    native = get_20k_label_mappings(labels_path)
     hierarchical = []
     tree.get_definitions(hierarchical)
     mapping = []
@@ -559,8 +570,8 @@ def native_to_hierarchical_translation_map(tree: TaxonomyTree):
     return mapping
 
 
-def hierarchical_to_native_translation_map(tree: TaxonomyTree):
-    native = get_20k_label_mappings()
+def hierarchical_to_native_translation_map(tree: TaxonomyTree, labels_path: str):
+    native = get_20k_label_mappings(labels_path)
     hierarchical = []
     tree.get_definitions(hierarchical)
     mapping = []
@@ -581,8 +592,8 @@ def translate_to_level(index_mappings, level_from_root, index):
     assert current_idx < len(index_mappings[-level_from_leaf]), "Invalid index"
     return current_idx
 
-def get_20k_label_mappings():
-    f = open('/media/jeff/9566f510-ddf5-468b-a0fb-1d10bd7fabca/data_dir/labels.txt')
+def get_20k_label_mappings(labels_path):
+    f = open(labels_path)
     names = []
     for line in f:
         splitted = line.split(":")
@@ -591,42 +602,44 @@ def get_20k_label_mappings():
 
     return names
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--labels', help='Where to load labels txt file from')
+    args = parser.parse_args()
 
-t = generate_tree()
-t.prune(threshold=5)
-t.prune_by_names(get_20k_label_mappings())
+    t = generate_tree()
+    t.prune(threshold=5)
+    t.prune_by_names(get_20k_label_mappings(args.labels))
 
-pruned_tree = t
+    pruned_tree = t
 
-# print(t.hierarchy_hashmap())
+    # print(t.hierarchy_hashmap())
 
-def_l, i_m = t.get_tree_index_mappings()
-s = set()
+    def_l, i_m = t.get_tree_index_mappings()
+    s = set()
 
-
-
-# print(json.dumps(t.to_hashmap()))
+    # print(json.dumps(t.to_hashmap()))
 
 
-# print((def_l))
-# print(len(t.children()))
-#
-# for i in t.children(): s.add(i.get_full_name())
-# for i in get_20k_label_mappings(): s.remove(i)
-# # bads = []
-# # for item in t.children():
-# #     if item.get_full_name() in s:
-# #         bads.append(item)
-# #         print(item.count_at_node)
-# #         print(item.subtrees)
-# # print(bads)
-# print(s)
+    # print((def_l))
+    # print(len(t.children()))
+    #
+    # for i in t.children(): s.add(i.get_full_name())
+    # for i in get_20k_label_mappings(): s.remove(i)
+    # # bads = []
+    # # for item in t.children():
+    # #     if item.get_full_name() in s:
+    # #         bads.append(item)
+    # #         print(item.count_at_node)
+    # #         print(item.subtrees)
+    # # print(bads)
+    # print(s)
 
-def check_tree():
+def check_tree(labels_path):
     print(t.check_depth(leaf_depth=6))
 
-    nm = native_to_hierarchical_translation_map(t)
-    hm = hierarchical_to_native_translation_map(t)
+    nm = native_to_hierarchical_translation_map(t, labels_path)
+    hm = hierarchical_to_native_translation_map(t, labels_path)
 
     assert all([x == hm[nm[x]] and x == nm[hm[x]] for x in range(0, len(nm))]) and len(nm) == len(hm), "Mapping not well defined"
 

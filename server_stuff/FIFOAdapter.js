@@ -33,7 +33,8 @@ class FIFOAdapter {
         });
     }
 
-    write(content, callback = () => {}) {
+    write(content, callback = (...args) => {}) {
+        console.log(callback)
         fs.open(this.towards_classifier_resource, 'w', (err, file) => {
 
             if (err) {
@@ -42,7 +43,7 @@ class FIFOAdapter {
 
             fs.write(file, content, (err, done) => {
                 if (!err) {
-                    fs.close(file);
+                    fs.close(file, () => {});
                 }
 
                 callback(err, done);
