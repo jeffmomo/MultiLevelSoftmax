@@ -95,7 +95,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         print("written")
 
-        current_queue_size = 69
+        current_queue_size = to_classifier_queue.qsize()
 
         return send_templated(str(Path('views') / 'classified.html'), {
             "queued": current_queue_size,

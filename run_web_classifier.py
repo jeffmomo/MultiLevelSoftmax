@@ -12,6 +12,24 @@ from classification_server.saved_model_classifier import (
 
 logger = logging.getLogger(__name__)
 
+class PortableQueue(multiprocessing.Queue):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.size = SharedCounter(0)
+
+    def put(self, *args, **kwargs):
+        self.size.increment(1)
+        super().put(*args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        self.size.increment(-1)
+        return super().get(*args, **kwargs)
+
+    def qsize(self):
+        """ Reliable implementation of multiprocessing.Queue.qsize() """
+        return self.size.value
+    
+
 def model_worker(
     saved_model_dir: str,
     labels_path,
@@ -43,8 +61,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    to_classifier_queue: multiprocessing.Queue = multiprocessing.Queue()
-    from_classifier_queue: multiprocessing.Queue = multiprocessing.Queue()
+    to_classifier_queue: multiprocessing.Queue = PortableQueue()
+    from_classifier_queue: multiprocessing.Queue = PortableQueue()
 
     worker_process = multiprocessing.Process(
         target=partial(
