@@ -14,16 +14,16 @@ logger = logging.getLogger(__name__)
 
 class PortableQueue(multiprocessing.Queue):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(PortableQueue, self).__init__(*args, **kwargs)
         self.size = SharedCounter(0)
 
     def put(self, *args, **kwargs):
         self.size.increment(1)
-        super().put(*args, **kwargs)
+        super(PortableQueue, self).put(*args, **kwargs)
 
     def get(self, *args, **kwargs):
         self.size.increment(-1)
-        return super().get(*args, **kwargs)
+        return super(PortableQueue, self).get(*args, **kwargs)
 
     def qsize(self):
         """ Reliable implementation of multiprocessing.Queue.qsize() """
