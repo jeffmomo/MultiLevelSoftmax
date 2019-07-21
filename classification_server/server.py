@@ -103,7 +103,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         with queue_size_counter.get_lock():
             current_queue_size = queue_size_counter.value
-            queue_size_counter += 1
+            queue_size_counter.value += 1
 
         return send_templated(str(Path('views') / 'classified.html'), {
             "queued": current_queue_size,
