@@ -34,12 +34,18 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     ready_result = {}
     request_metadata = {}
 
+    queue_size_counter = multiprocessing.Value('i')
+    queue_size_counter.value = 0
+
     @app.route("/waiting/<wait_on_index>")
     def wait_on_classification(wait_on_index):
         try:
             result, hierarchy_json, clsf_index = from_classifier_queue.get_nowait()
             print('gotten results for', str(clsf_index))
             ready_result[clsf_index] = (result, hierarchy_json)
+
+            with queue_size_counter.get_lock():
+                queue_size_counter.value -= 1
         except queue.Empty:
             print("no result this time")
 
@@ -95,7 +101,9 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         print("written")
 
-        current_queue_size = to_classifier_queue.qsize()
+        with queue_size_counter.get_lock():
+            current_queue_size = queue_size_counter.value
+            queue_size_counter += 1
 
         return send_templated(str(Path('views') / 'classified.html'), {
             "queued": current_queue_size,
