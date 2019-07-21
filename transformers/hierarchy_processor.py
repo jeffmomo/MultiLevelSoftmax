@@ -1,6 +1,5 @@
 import math
 import os
-import sys
 import argparse
 from hierarchy import hierarchical_eval, get_hierarchy
 
@@ -45,7 +44,7 @@ class HierarchyProcessor:
             translated_probs[self.label_map[i]] = probs[i]
 
         top5 = [
-            {"name": definitions_list[x[0]], "probability": x[1]}
+            {"name": self.definitions_list[x[0]], "probability": x[1]}
             for x in sorted(enumerate(translated_probs), key=lambda x: -x[1])[:5]
         ]
 
@@ -56,7 +55,7 @@ class HierarchyProcessor:
         if canonical_priors in self.reverse_tree:
             tmp_evaluator = hierarchical_eval.LayerEvaluator(
                 self.mapping_layer,
-                definitions_list,
+                self.definitions_list,
                 self.reverse_tree[canonical_priors][::-1],
             )
 
@@ -65,12 +64,12 @@ class HierarchyProcessor:
                 translated_probs, 0.707
             )
         else:
-            top_prob, top_name = evaluator.dijkstra_top(translated_probs)
-            thresh_prob, thresh_name, thresh_depth = evaluator.dijkstra_threshold(
+            top_prob, top_name = self.evaluator.dijkstra_top(translated_probs)
+            thresh_prob, thresh_name, thresh_depth = self.evaluator.dijkstra_threshold(
                 translated_probs, 0.707
             )
 
-        print(definitions_list[translated_probs.index(max(translated_probs))])
+        print(self.definitions_list[translated_probs.index(max(translated_probs))])
 
         return (
             {"name": top_name, "probability": top_prob},
