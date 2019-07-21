@@ -34,9 +34,9 @@ def model_worker(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--saved_model_dir")
-    parser.add_argument("--labels_path")
-    parser.add_argument("--hierarchy_file_path")
+    parser.add_argument("--saved_model_dir", required=True)
+    parser.add_argument("--labels_path", required=True)
+    parser.add_argument("--hierarchy_file_path", required=True)
 
     args = parser.parse_args()
 
