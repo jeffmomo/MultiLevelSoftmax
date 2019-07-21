@@ -57,7 +57,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
             original_image_bytes, priors = request_metadata[wait_on_index]
             response = jsonify({
                 'classifications': hierarchy_json,
-                'saliency_image': result.saliency,
+                'saliency_image': classification_result.saliency,
                 'original_image': str(base64.b64encode(original_image), 'utf8'),
                 'priors': priors,
             })
@@ -107,7 +107,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         return send_templated(str(Path('views') / 'classified.html'), {
             "queued": current_queue_size,
-            "timeRemaining": current_queue_size * 0.85,
+            "timeRemaining": current_queue_size * 0.85 + 4,
             "imgIndex": image_id,
         })
     
