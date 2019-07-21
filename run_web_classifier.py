@@ -1,6 +1,7 @@
 import multiprocessing
 from functools import partial
 import argparse
+import logging
 
 from transformers.hierarchy_processor import HierarchyProcessor
 from classification_server.server import create_app
@@ -9,6 +10,7 @@ from classification_server.saved_model_classifier import (
     PredictionResult,
 )
 
+logger = logging.getLogger(__name__)
 
 def model_worker(
     saved_model_dir: str,
@@ -22,6 +24,7 @@ def model_worker(
 
     while True:
         image_bytes, priors = to_model_queue.get()
+        logger.info("GOTTEN!!!")
         result = model.predict(image_bytes)
 
         hierarchy_output = processor.compute(result.probabilities, priors)
