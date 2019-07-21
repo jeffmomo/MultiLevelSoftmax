@@ -23,7 +23,7 @@ class SavedModelClassifier:
                 self._image_bytes_placeholder: jpg_image_bytes
             })
 
-            return PredictionResult(probabilities, str(base64.b64encode(cv2.imencode('.jpeg', saliency)), 'utf8'))
+            return PredictionResult(probabilities, str(base64.b64encode(cv2.imencode('.jpeg', saliency)[1]), 'utf8'))
     
     def predict(self, image_bytes: bytes) -> PredictionResult:
         image = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
