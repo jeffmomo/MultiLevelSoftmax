@@ -58,7 +58,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
             response = jsonify({
                 'classifications': hierarchy_json,
                 'saliency_image': classification_result.saliency,
-                'original_image': str(base64.b64encode(original_image), 'utf8'),
+                'original_image': str(base64.b64encode(original_image_bytes), 'utf8'),
                 'priors': priors,
             })
 
