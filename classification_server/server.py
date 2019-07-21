@@ -44,7 +44,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         # TODO: free up result dict after returning a result
         print(list(ready_result.keys()))
-        if wait_on_index in ready_result:
+        if int(wait_on_index) in ready_result:
             classification_result, hierarchy_json = ready_result[wait_on_index]
             return jsonify({
                 'classifications': hierarchy_json,
