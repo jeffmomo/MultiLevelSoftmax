@@ -18,7 +18,7 @@ def fill(fillers: Dict[str, str], template: str):
 
 
 def send_templated(template_path, fillers):
-    with open(template_path) as f:
+    with open(Path(__file__).parent / template_path) as f:
         template = f.read()
 
     return fill(fillers, template)

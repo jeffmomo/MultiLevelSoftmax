@@ -26,4 +26,4 @@ if __name__ == '__main__':
     worker_process.start()
 
     flask_app = create_app(to_classifier_queue, from_classifier_queue)
-    flask_app.run('0.0.0.0', 8080)
+    flask_app.run('0.0.0.0', 8000)
