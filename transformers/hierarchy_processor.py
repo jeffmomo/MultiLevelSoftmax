@@ -32,6 +32,7 @@ class HierarchyProcessor:
         self.tree = tree
         self.mapping = mapping
         self.mapping_layer = layer
+        self.reverse_tree = reverse_tree
 
     def compute(self, probs, priors=""):
         
@@ -76,6 +77,3 @@ class HierarchyProcessor:
             {"name": thresh_name, "probability": thresh_prob},
             top5,
         )
-
-        # need to return top prob, name, and thresh prob, name ,and top5s
-
