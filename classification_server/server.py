@@ -45,7 +45,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         if wait_on_index in ready_result:
             classification_result, hierarchy_json = ready_result[wait_on_index]
             return jsonify({
-                'classifications': hierarchy_json
+                'classifications': hierarchy_json,
                 'saliency_image': result.saliency
             })
         else:
