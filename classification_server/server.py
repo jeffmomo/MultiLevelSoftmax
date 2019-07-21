@@ -37,11 +37,13 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     def wait_on_classification(wait_on_index):
         try:
             result, hierarchy_json, clsf_index = from_classifier_queue.get_nowait()
-            print(result, hierarchy_json)
+            print('gotten results for', str(clsf_index))
             ready_result[clsf_index] = (result, hierarchy_json)
         except queue.Empty:
             print("no result this time")
 
+        # TODO: free up result dict after returning a result
+        print(list(ready_result.keys()))
         if wait_on_index in ready_result:
             classification_result, hierarchy_json = ready_result[wait_on_index]
             return jsonify({
