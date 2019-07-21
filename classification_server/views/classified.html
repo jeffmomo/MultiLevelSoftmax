@@ -22,7 +22,12 @@
         $.ajax('/waiting/{{imgIndex}}', {
             dataType: 'json',
             success: function (res) {
-                console.log(res.responseJSON)
+                console.log(res)
+
+                if(res.in_progress) {
+                    setTimeOut(waitForResult, 2000)
+                    return
+                }
 
                 $('#mainDiv').addClass('invisible');
                 $('#classifiedDiv').removeClass('invisible');
