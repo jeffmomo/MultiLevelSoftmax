@@ -33,13 +33,13 @@
                 $('#mainDiv').addClass('invisible');
                 $('#classifiedDiv').removeClass('invisible');
 
-                const [top1, thresh1, ...top5] = res.classifications
+                const [top1, thresh1, top5] = res.classifications
 
                 var species = top1.name.split('.').join(' ');
-                var leafProb = top1.probability.toString().substr(0, 4);
+                var leafProb = (top1.probability * 100).toString().substr(0, 4);
 
                 var node = thresh1.name.split('.').join(' ');
-                var nodeProb = thresh1.probability.toString().substr(0, 4);
+                var nodeProb = (thresh1.probability * 100).toString().substr(0, 4);
 
                 images.original = res.original_image;
                 images.activations = res.saliency_image;
@@ -58,7 +58,7 @@
 
 
                 for(var i = 1; i < 5; i++) {
-                    $('#rest' + (i-1)).html(top5[i].name.split('.').join(' ') + ': ' + top5[i].probability.toString().substr(0, 4) + '%');
+                    $('#rest' + (i-1)).html(top5[i].name.split('.').join(' ') + ': ' + (top5[i].probability * 100).toString().substr(0, 4) + '%');
                 }
 
                 if (node != species) {
