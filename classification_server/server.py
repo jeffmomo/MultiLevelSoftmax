@@ -77,7 +77,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         image_id = id(image_bytes)
 
         print(str(base64.b64encode(image_bytes), 'utf8'))
-        to_classifier_queue.put((image_bytes, priors))
+        to_classifier_queue.put((image_bytes, priors, image_id))
         print("written")
 
         current_queue_size = 69
