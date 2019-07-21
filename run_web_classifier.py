@@ -23,13 +23,13 @@ def model_worker(
     processor = HierarchyProcessor(labels_path, hierarchy_file_path)
 
     while True:
-        image_bytes, priors = to_model_queue.get()
+        image_bytes, priors, index = to_model_queue.get()
         logger.info("GOTTEN!!!")
         result = model.predict(image_bytes)
 
         hierarchy_output = processor.compute(result.probabilities, priors)
 
-        from_model_queue.put((result, hierarchy_output))
+        from_model_queue.put((result, hierarchy_output, index))
 
 
 # TODO Capture signal to terminate

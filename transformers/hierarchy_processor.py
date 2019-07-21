@@ -49,10 +49,8 @@ class HierarchyProcessor:
             for x in sorted(enumerate(translated_probs), key=lambda x: -x[1])[:5]
         ]
 
-        print(top5)
-
         canonical_priors = priors.replace(" ", ".").lower()
-        print(canonical_priors)
+
         if canonical_priors in self.reverse_tree:
             tmp_evaluator = hierarchical_eval.LayerEvaluator(
                 self.mapping_layer,

@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+import base64
 from collections import namedtuple
 
 
@@ -22,7 +23,7 @@ class SavedModelClassifier:
                 self._image_bytes_placeholder: jpg_image_bytes
             })
 
-            return PredictionResult(probabilities, saliency)
+            return PredictionResult(probabilities, str(base64.b64encode(cv2.imencode('.jpeg', saliency)), 'utf8'))
     
     def predict(self, image_bytes: bytes) -> PredictionResult:
         image = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), 1)

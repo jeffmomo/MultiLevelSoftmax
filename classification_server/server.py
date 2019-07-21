@@ -5,7 +5,7 @@ import multiprocessing
 from pathlib import Path
 import queue
 from collections import namedtuple
-from flask import Flask, send_file, request
+from flask import Flask, send_file, request, jsonify
 
 from classification_server.saved_model_classifier import PredictionResult
 
@@ -36,19 +36,22 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     @app.route("/waiting/<wait_on_index>")
     def wait_on_classification(wait_on_index):
         try:
-            a_result: PredictionResult = from_classifier_queue.get_nowait()
-            print(a_result)
-            image_index = a_result["image_index"]
-            ready_result[image_index] = a_result
+            result, hierarchy_json, clsf_index = from_classifier_queue.get_nowait()
+            print(result, hierarchy_json)
+            ready_result[clsf_index] = (result, hierarchy_json)
         except queue.Empty:
             print("no result this time")
 
         if wait_on_index in ready_result:
-            # Redirect!
-            return 'HAS RESULT!!!!'
-            pass
+            classification_result, hierarchy_json = ready_result[wait_on_index]
+            return jsonify({
+                'classifications': hierarchy_json
+                'saliency_image': result.saliency
+            })
         else:
-            return "NOT YET READY"
+            return jsonify({
+                'in_progress': True
+            })
 
 
     @app.route("/classify")

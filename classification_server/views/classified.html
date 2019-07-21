@@ -18,18 +18,11 @@
         }, template)
     }
 
-    var images = {};
-
-    window.onload = function () {
+    function waitForResults() {
         $.ajax('/waiting/{{imgIndex}}', {
+            dataType: 'json',
             success: function (res) {
-
-                var obj = res;
-
-                if (!obj || !obj.length) {
-                    alert('Error occurred...');
-                    return;
-                }
+                console.log(res.responseJSON)
 
                 $('#mainDiv').addClass('invisible');
                 $('#classifiedDiv').removeClass('invisible');
@@ -79,6 +72,10 @@
             }
         })
     }
+
+    var images = {};
+
+    window.onload = waitForResults
 
     function showRest() {
         $('#restDiv').removeClass('invisible');
