@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 import heapq
 
 class LevelNode:
@@ -18,11 +18,10 @@ class LevelNode:
         return not len(self.members)
         pass
 
-    def top_member(self, output) -> 'LevelNode':
+    def top_member(self, output) -> Optional['LevelNode']:
         sorted_members = self.get_sorted_members(output)
 
         return sorted_members[0][1] if len(sorted_members) > 0 else None
-        pass
 
     def get_value(self, output) -> float:
         return output[self.index]
@@ -58,8 +57,6 @@ class FlatEvaluator:
 
 
 class Evaluator:
-
-
     def __init__(self, root_node: LevelNode):
         self.root = root_node
 

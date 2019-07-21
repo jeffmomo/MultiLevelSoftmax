@@ -9,6 +9,7 @@ import json
 import os
 from tqdm import tqdm
 import argparse
+from pathlib import Path
 
 from hierarchy import hierarchical_eval
 from hierarchy.level_evaluate import LevelNode
@@ -501,15 +502,17 @@ def get_chain_by_name(chain, mapping):
 
 
 
-def generate_tree(nz_only=False):
+def generate_tree(nz_only=False, hierarchy_file=None, observations_file=None):
+    if not hierarchy_file and not observations_file:
+        raise Exception('Need to supply one of hierarchy file or observations file')
 
     skipped_count = 0
 
-    if os.path.isfile('hierarchy_file.dat'):
-        t = pickle.load(open('hierarchy_file.dat', 'rb'))
+    if hierarchy_file:
+        t = pickle.load(open(hierarchy_file, 'rb'))
     else:
         t = TaxonomyTree('init')
-        f = open(os.path.expanduser('~/observations.csv'), 'r')
+        f = open(os.path.expanduser(observations_file), 'r')
         count = 0
         csv_file = csv.DictReader(f, delimiter=',', quotechar='"')
         for row in tqdm(csv_file):
@@ -550,7 +553,7 @@ def generate_tree(nz_only=False):
 
             count += 1
             # print(species + ' added')
-        pickle.dump(t, open('hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
+        pickle.dump(t, open(Path(observations_file).parent / 'hierarchy_file.dat', 'wb+'), pickle.HIGHEST_PROTOCOL)
         print('Skipped: ' + str(skipped_count))
 
     return t
@@ -607,7 +610,7 @@ if __name__ == '__main__':
     parser.add_argument('--labels', help='Where to load labels txt file from')
     args = parser.parse_args()
 
-    t = generate_tree()
+    t = generate_tree(hierarchy_file='hierarchy_file.dat')
     t.prune(threshold=5)
     t.prune_by_names(get_20k_label_mappings(args.labels))
 
