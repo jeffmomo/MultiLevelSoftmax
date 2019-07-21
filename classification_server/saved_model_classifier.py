@@ -18,7 +18,7 @@ class SavedModelClassifier:
 
     def predict_jpeg(self, jpg_image_bytes: bytes) -> PredictionResult:
         with self._session.as_default():
-            probabilities, saliency = self._session.run([self._probabilities_tensor, self._saliency_tensor], feed_dict={
+            probabilities, saliency = self._session.run([tf.squeeze(self._probabilities_tensor), tf.squeeze(self._saliency_tensor)], feed_dict={
                 self._image_bytes_placeholder: jpg_image_bytes
             })
 

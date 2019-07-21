@@ -35,7 +35,7 @@ class HierarchyProcessor:
         self.mapping_layer = layer
 
     def compute(self, probs, priors=""):
-
+        
         print(len(probs), len(self.definitions_list))
 
         translated_probs = [0] * len(probs)
