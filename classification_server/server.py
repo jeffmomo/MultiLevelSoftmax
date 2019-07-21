@@ -64,7 +64,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     @app.route("/classify-upload", methods=["POST"])
     def upload():
         form_dict = request.form.to_dict()
-        priors = form_dict["priors"]
+        priors = form_dict.get("priors")
 
         if "example" in request.files:
             image_bytes = request.files["example"].read()
@@ -74,6 +74,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         image_id = id(image_bytes)
 
         print(str(base64.b64encode(image_bytes), 'utf8'))
+        to_classifier_queue.put((image_bytes, priors))
         print("written")
 
         current_queue_size = 69
