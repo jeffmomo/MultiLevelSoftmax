@@ -48,11 +48,11 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         wait_on_index = int(wait_on_index)
         if wait_on_index in ready_result:
             classification_result, hierarchy_json = ready_result[wait_on_index]
-            original_image, priors = request_metadata[wait_on_index]
+            original_image_bytes, priors = request_metadata[wait_on_index]
             response = jsonify({
                 'classifications': hierarchy_json,
                 'saliency_image': result.saliency,
-                'original_image': original_image,
+                'original_image': str(base64.b64encode(original_image), 'utf8'),
                 'priors': priors,
             })
 
@@ -92,7 +92,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         to_classifier_queue.put((image_bytes, priors, image_id))
 
         request_metadata[image_id] = image_bytes, priors
-        
+
         print("written")
 
         current_queue_size = 69
