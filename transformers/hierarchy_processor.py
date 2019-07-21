@@ -42,7 +42,7 @@ class HierarchyProcessor:
 
         # Translate labels here
         for i in range(len(probs)):
-            translated_probs[self.label_map[i]] = probs[i]
+            translated_probs[self.label_map[i]] = float(probs[i])
 
         top5 = [
             {"name": self.definitions_list[x[0]], "probability": x[1]}
