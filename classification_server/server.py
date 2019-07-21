@@ -32,6 +32,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     app = Flask(__name__)
 
     ready_result = {}
+    request_metadata = {}
 
     @app.route("/waiting/<wait_on_index>")
     def wait_on_classification(wait_on_index):
@@ -47,10 +48,18 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         wait_on_index = int(wait_on_index)
         if wait_on_index in ready_result:
             classification_result, hierarchy_json = ready_result[wait_on_index]
-            return jsonify({
+            original_image, priors = request_metadata[wait_on_index]
+            response = jsonify({
                 'classifications': hierarchy_json,
-                'saliency_image': result.saliency
+                'saliency_image': result.saliency,
+                'original_image': original_image,
+                'priors': priors,
             })
+
+            del ready_result[wait_on_index]
+            del request_metadata[wait_on_index]
+
+            return response
         else:
             return jsonify({
                 'in_progress': True
@@ -81,6 +90,9 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         print(str(base64.b64encode(image_bytes), 'utf8'))
         to_classifier_queue.put((image_bytes, priors, image_id))
+
+        request_metadata[image_id] = image_bytes, priors
+        
         print("written")
 
         current_queue_size = 69

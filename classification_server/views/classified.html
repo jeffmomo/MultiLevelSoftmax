@@ -24,6 +24,7 @@
             success: function (res) {
                 console.log(res)
 
+                // Poll the endpoint until it's no longer in progress
                 if(res.in_progress) {
                     setTimeout(waitForResults, 2000)
                     return
@@ -32,16 +33,16 @@
                 $('#mainDiv').addClass('invisible');
                 $('#classifiedDiv').removeClass('invisible');
 
-                var species = obj[1].split('.').join(' ');
-                var leafProb = ((parseFloat(obj[0]) * 100) + "").substr(0, 4);
+                const [top1, thresh1, ...top5] = res.classifications
 
-                var node = obj[3].split('.').join(' ');
-                var nodeProb = ((parseFloat(obj[2]) * 100) + "").substr(0, 4);
+                var species = top1.name.split('.').join(' ');
+                var leafProb = top1.probability.toString().substr(0, 4);
 
-                var img = obj[6];
+                var node = thresh1.name.split('.').join(' ');
+                var nodeProb = thresh1.probability.toString().substr(0, 4);
 
-                images.original = img;
-                images.activations = obj[18];
+                images.original = res.original_image;
+                images.activations = res.saliency_image;
 
                 $('#imge').attr('src', 'data:image/jpeg;base64,' + images.original);
                 $('#imgeActivations').attr('src', 'data:image/jpeg;base64,' + images.activations);
@@ -52,14 +53,12 @@
                     $('.mouseoverables').addClass('transparent');
                 });
 
-
-
                 $('#leaf').attr('href', 'http://google.com/search?q=' + species).html(species);
                 $('#leafProb').html(leafProb);
 
 
                 for(var i = 1; i < 5; i++) {
-                    $('#rest' + (i-1)).html(obj[8 + i*2].split('.').join(' ') + ': ' + (obj[9+i*2] * 100).toString().substr(0, 4) + '%');
+                    $('#rest' + (i-1)).html(top5[i].name.split('.').join(' ') + ': ' + top5[i].probability.toString().substr(0, 4) + '%');
                 }
 
                 if (node != species) {
@@ -70,7 +69,7 @@
 
                 if(obj[7] !== '') {
                     $('#usedPriors').removeClass('invisible');
-                    $('#usedPriors').html('<span>PRIORS USED: ' + obj[7] + ' </span></br>');
+                    $('#usedPriors').html('<span>PRIORS USED: ' + res.priors + ' </span></br>');
                 }
 
 
