@@ -44,8 +44,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    to_classifier_queue: multiprocessing.Queue = PortableQueue()
-    from_classifier_queue: multiprocessing.Queue = PortableQueue()
+    to_classifier_queue: multiprocessing.Queue = multiprocessing.Queue()
+    from_classifier_queue: multiprocessing.Queue = multiprocessing.Queue()
 
     worker_process = multiprocessing.Process(
         target=partial(
