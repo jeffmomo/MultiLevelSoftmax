@@ -41,7 +41,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     def wait_on_classification(wait_on_index):
         try:
             result, hierarchy_json, clsf_index = from_classifier_queue.get_nowait()
-            print('gotten results for', str(clsf_index))
+
             ready_result[clsf_index] = (result, hierarchy_json)
 
             with queue_size_counter.get_lock():
@@ -50,7 +50,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
             print("no result this time")
 
         # TODO: free up result dict after returning a result
-        print(list(ready_result.keys()))
+
         wait_on_index = int(wait_on_index)
         if wait_on_index in ready_result:
             classification_result, hierarchy_json = ready_result[wait_on_index]
@@ -94,12 +94,9 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         image_id = id(image_bytes)
 
-        print(str(base64.b64encode(image_bytes), 'utf8'))
         to_classifier_queue.put((image_bytes, priors, image_id))
 
         request_metadata[image_id] = image_bytes, priors
-
-        print("written")
 
         with queue_size_counter.get_lock():
             current_queue_size = queue_size_counter.value

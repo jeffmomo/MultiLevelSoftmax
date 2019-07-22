@@ -22,8 +22,6 @@
         $.ajax('/waiting/{{imgIndex}}', {
             dataType: 'json',
             success: function (res) {
-                console.log(res)
-
                 // Poll the endpoint until it's no longer in progress
                 if(res.in_progress) {
                     setTimeout(waitForResults, 500)
@@ -67,7 +65,7 @@
                     $('#nodeProb').html(nodeProb);
                 }
 
-                if(obj[7] !== '') {
+                if(res.priors !== '') {
                     $('#usedPriors').removeClass('invisible');
                     $('#usedPriors').html('<span>PRIORS USED: ' + res.priors + ' </span></br>');
                 }
@@ -178,7 +176,7 @@
     </div>
 
     <div style="display: block; margin-top: 20px; width: 299px; height: 299px; position: relative;">
-         <img id="imge" class="absImg" alt="This is the crop used by the neural network">
+        <img id="imge" style="width: 299px; height: 299px" class="absImg" alt="This is the crop used by the neural network">
         <div style="width: 299px; height: 299px; background-color: black; opacity: 0.9; mix-blend-mode: multiply;" class="absImg mouseoverables transparent"></div>
         <img id="imgeActivations" class="mouseoverables absImg transparent" alt="This is the crop used by the neural network">
     </div>

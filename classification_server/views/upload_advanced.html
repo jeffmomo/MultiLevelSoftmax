@@ -122,7 +122,6 @@ function makeDarkroom(tag) {
                 var container = $('.canvas-container');
                 var newHeight = (300 / parseInt(container.css('width'))) * parseInt(container.css('height')); //(300.0 / container.css('width')) * container.css('height');
                 container.css('width', "").css('height', newHeight);
-                console.log('transformed');
             }
             action();
             this.addEventListener('core:transformation', action);
@@ -199,7 +198,6 @@ let darkroom = null;
 function saveImg() {
     if(darkroom) {
         const newImg = darkroom.canvas.toDataURL();
-        console.log(newImg);
         resetDarkroom();
         $('#image').attr('src', newImg);
         $('#dummyInput').val(newImg);
