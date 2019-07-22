@@ -12,7 +12,7 @@ from classification_server.saved_model_classifier import (
 
 logger = logging.getLogger(__name__)
 
-
+# Worker process definition
 def model_worker(
     saved_model_dir: str,
     labels_path,
@@ -24,16 +24,14 @@ def model_worker(
     processor = HierarchyProcessor(labels_path, hierarchy_file_path)
 
     while True:
+        # Blocking get on queue - so worker waits when nothing to classify
         image_bytes, priors, index = to_model_queue.get()
-        logger.info("GOTTEN!!!")
+
         result = model.predict(image_bytes)
 
         hierarchy_output = processor.compute(result.probabilities, priors)
 
         from_model_queue.put((result, hierarchy_output, index))
-
-
-# TODO Capture signal to terminate
 
 
 if __name__ == "__main__":
@@ -47,6 +45,8 @@ if __name__ == "__main__":
     to_classifier_queue: multiprocessing.Queue = multiprocessing.Queue()
     from_classifier_queue: multiprocessing.Queue = multiprocessing.Queue()
 
+    # Start Tensorflow classifier as a worker process
+    # It communicates via queues to the web server
     worker_process = multiprocessing.Process(
         target=partial(
             model_worker,
