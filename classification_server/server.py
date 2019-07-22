@@ -47,7 +47,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
             with queue_size_counter.get_lock():
                 queue_size_counter.value -= 1
         except queue.Empty:
-            print("no result this time")
+            pass
 
         # TODO: free up result dict after returning a result
 
