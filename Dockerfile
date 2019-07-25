@@ -12,6 +12,7 @@ ENV PATH /opt/conda/envs/tensorflow/bin:$PATH
 COPY classification_server classification_server
 COPY transformers transformers
 COPY hierarchy hierarchy
+copy misc misc
 COPY run_web_classifier.py run_web_classifier.py
 
 CMD ["python3", "run_web_classifier.py", "--saved_model_dir=assets/saved_model", "--labels_path=assets/labels.txt", "--hierarchy_file_path=assets/hierarchy_file.pkl"]
