@@ -1,0 +1,61 @@
+<html>
+
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
+
+<style>
+    .invisible {
+        display: none !important;
+    }
+
+    .transparent {
+        opacity: 0 !important;
+    }
+
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #b5faff;
+    }
+
+    .txt {
+        font-weight: 400;
+        font-size: 20px;
+        font-family: 'Roboto', 'sans-serif';
+        background-color: black;
+        color: #b5faff;
+        display: inline-block;
+        padding: 20px;
+    }
+
+    .absImg {
+        left: 0;
+        top: 0;
+        position: absolute;
+    }
+
+    #imgeActivations {
+        mix-blend-mode: screen;
+    }
+
+
+
+    a {
+        color: white;
+    }
+</style>
+
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+
+<div id='mainDiv' align="center">
+    <div class='txt'> REQUEST DENIED - Server Overloaded </div>
+    <p></p>
+    <div class='txt'>There are already {{queued}} images in queue</div>
+    <p></p>
+    <div class='txt'> Please try again in ~{{timeRemaining}} seconds</div>
+</div>
+
+</body>

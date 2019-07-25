@@ -1,13 +1,17 @@
-from functools import reduce
-from typing import Dict
 import base64
 import multiprocessing
-from pathlib import Path
 import queue
+import time
 from collections import namedtuple
-from flask import Flask, send_file, request, jsonify
+from functools import reduce
+from pathlib import Path
+from typing import Any, Dict
 
+from misc.utils import time_it
 from classification_server.saved_model_classifier import PredictionResult
+from flask import Flask, jsonify, request, send_file
+
+_OVERLOAD_THRESHOLD = 20
 
 
 def fill(fillers: Dict[str, str], template: str):
@@ -29,15 +33,12 @@ def _get_b64_from_dataurl(b64string):
     return b64string.split(",")[1]
 
 
-def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Queue):
+def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Queue, queue_size_counter: multiprocessing.Value):
     app = Flask(__name__)
 
     # Store done classifications that are awaiting poll
-    ready_result = {}
-    request_metadata = {}
-
-    queue_size_counter = multiprocessing.Value('i')
-    queue_size_counter.value = 0
+    ready_result: Dict[int, tuple] = {}
+    request_metadata: Dict[int, tuple] = {}
 
     @app.route("/waiting/<wait_on_index>")
     def wait_on_classification(wait_on_index):
@@ -49,8 +50,6 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
             ready_result[clsf_index] = (result, hierarchy_json)
 
-            with queue_size_counter.get_lock():
-                queue_size_counter.value -= 1
         except queue.Empty:
             pass
 
@@ -88,14 +87,23 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
     @app.route("/classify-upload", methods=["POST"])
     def upload():
+        # Check if queue is too deep (i.e. server is overloaded)
+        # If so, send denied page
+        if queue_size_counter.value > _OVERLOAD_THRESHOLD:
+            return send_templated(Path('views') / 'denied.html', {
+                'queued': str(queue_size_counter.value),
+                'timeRemaining': '%.2f seconds' % (queue_size_counter.value * 6 + 4, ),
+            })
+
         form_dict = request.form.to_dict()
-        priors = form_dict.get("priors")
+        priors = form_dict.get("priors", '')
 
         # Expects 2 formats, depending on whether darkroom.js is used or not (i.e. classify-advanced) 
-        if "example" in request.files:
-            image_bytes = request.files["example"].read()
-        else:
-            image_bytes = base64.b64decode(_get_b64_from_dataurl(form_dict["image_base64"]))
+        with time_it('deserialise_request'):
+            if "example" in request.files:
+                image_bytes = request.files["example"].read()
+            else:
+                image_bytes = base64.b64decode(_get_b64_from_dataurl(form_dict["image_base64"]))
 
         # Assign a unique ID to the request
         image_id = id(image_bytes)
@@ -106,12 +114,12 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         request_metadata[image_id] = image_bytes, priors
 
         with queue_size_counter.get_lock():
-            current_queue_size = queue_size_counter.value
             queue_size_counter.value += 1
+            current_queue_size = queue_size_counter.value
 
         return send_templated(str(Path('views') / 'classified.html'), {
             "queued": current_queue_size,
-            "timeRemaining": current_queue_size * 0.85 + 4,
+            "timeRemaining": current_queue_size * 6 + 4,
             "imgIndex": image_id,
         })
     
