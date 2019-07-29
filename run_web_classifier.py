@@ -2,6 +2,7 @@ import multiprocessing
 from functools import partial
 import argparse
 import logging
+from gevent.pywsgi import WSGIServer
 
 from transformers.hierarchy_processor import HierarchyProcessor
 from misc.utils import time_it
@@ -68,4 +69,6 @@ if __name__ == "__main__":
     worker_process.start()
 
     flask_app = create_app(to_classifier_queue, from_classifier_queue, queue_size_counter)
-    flask_app.run("0.0.0.0", 8000, threaded=True)
+
+    http_server = WSGIServer(('0.0.0.0', 8000), flask_app)
+    http_server.serve_forever()

@@ -8,4 +8,5 @@ dependencies:
     - tqdm==4.32.2
     - requests==2.22.0
     - flask==1.1.1
+    - gevent==1.4.0
 prefix: /Scratch/repository/dm116/conda/envs/tensorflow
