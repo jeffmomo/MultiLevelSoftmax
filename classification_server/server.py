@@ -74,7 +74,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
                 'in_progress': True
             })
 
-
+    @app.route("/")
     @app.route("/classify")
     def send_upload_view():
         return send_file(Path("views") / "upload_advanced.html")
@@ -108,7 +108,8 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
         # Assign a unique ID to the request
         image_id = id(image_bytes)
 
-        to_classifier_queue.put((image_bytes, priors, image_id))
+        with time_it('put_queue'):
+            to_classifier_queue.put((image_bytes, priors, image_id))
 
         # Store some metadata here for this particular request ID
         request_metadata[image_id] = image_bytes, priors
