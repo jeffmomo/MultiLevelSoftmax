@@ -29,13 +29,17 @@ def model_worker(
     while True:
         try:
             # Blocking get on queue - so worker waits when nothing to classify
-            image_bytes, priors, index = to_model_queue.get()
+            with time_it('get_queue'):
+                image_bytes, priors, index = to_model_queue.get()
+
             with queue_counter.get_lock():
                 queue_counter.value -= 1
 
             result = model.predict(image_bytes)
+
             with time_it('hierarchy'):
                 hierarchy_output = processor.compute(result.probabilities, priors)
+
             from_model_queue.put((result, hierarchy_output, index))
         except Exception as e:
             logger.error(e)
