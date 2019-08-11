@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 from misc.utils import time_it
 from classification_server.saved_model_classifier import PredictionResult
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, send_from_directory
 
 _OVERLOAD_THRESHOLD = 20
 
@@ -35,6 +35,10 @@ def _get_b64_from_dataurl(b64string):
 
 def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Queue, queue_size_counter: multiprocessing.Value):
     app = Flask(__name__)
+
+    @app.route("/assets/<filename>")
+    def send_assets(filename):
+        return send_from_directory(Path("assets") / filename)
 
     # Store done classifications that are awaiting poll
     ready_result: Dict[int, tuple] = {}
@@ -120,7 +124,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         return send_templated(str(Path('views') / 'classified.html'), {
             "queued": current_queue_size,
-            "timeRemaining": current_queue_size * 6 + 4,
+            "timeRemaining": current_queue_size * 10 + 2,
             "imgIndex": image_id,
         })
     

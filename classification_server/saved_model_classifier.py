@@ -9,8 +9,10 @@ from misc.utils import time_it
 
 PredictionResult = namedtuple('PredictionResult', ['probabilities', 'saliency'])
 
+
 class SavedModelClassifier:
-    def __init__(self, saved_model_dir: str):
+    def __init__(self, saved_model_dir: str, compute_saliency=False):
+        self._compute_saliency = compute_saliency
         self._session = tf.Session(config=tf.ConfigProto(
             device_count={'CPU': 1},
             inter_op_parallelism_threads=1, 
@@ -26,9 +28,14 @@ class SavedModelClassifier:
 
     def predict_jpeg(self, jpg_image_bytes: bytes) -> PredictionResult:
         with time_it('tf_predict'):
-            probabilities, saliency = self._session.run([tf.squeeze(self._probabilities_tensor), tf.squeeze(self._saliency_tensor)], feed_dict={
-                self._image_bytes_placeholder: jpg_image_bytes
-            })
+            probabilities, saliency = self._session.run([
+                    tf.squeeze(self._probabilities_tensor), 
+                    # Return a dummy image of 5x5 if we don't compute saliency
+                    tf.squeeze(self._saliency_tensor) if self._compute_saliency else tf.zeros([5, 5, 3]),
+                ], 
+                feed_dict={
+                    self._image_bytes_placeholder: jpg_image_bytes
+                })
 
         return PredictionResult(probabilities, str(base64.b64encode(cv2.imencode('.jpeg', saliency)[1]), 'utf8'))
     
