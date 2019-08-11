@@ -38,7 +38,7 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
     @app.route("/assets/<filename>")
     def send_assets(filename):
-        return send_from_directory(Path("assets") / filename)
+        return send_from_directory("3rdparty", filename)
 
     # Store done classifications that are awaiting poll
     ready_result: Dict[int, tuple] = {}
