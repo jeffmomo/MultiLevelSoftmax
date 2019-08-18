@@ -153,7 +153,6 @@ function readURL(input) {
 }
 
 
-
 window.onload = function() {
     var input = document.getElementById('fileInput');
     if(input.files[0]) {
@@ -168,21 +167,22 @@ window.onload = function() {
 
 function doSubmit() {
   var acceptables = ['png', 'jpg', 'jpeg', 'tiff', 'tif', 'bmp'];
-
-  saveImg();
-  var file = document.getElementById('fileInput').files[0];
-  if($('#dummyInput').val())
-  {
-    //if(acceptables.indexOf(file.name.split('.').pop().toLowerCase()) > -1) {
-      document.getElementById('submitBtn').innerHTML = 'Uploading......';
-      $('#fileInput').remove();
-      document.getElementById('fileform').submit();
-    //} else {
-    //  alert('File must be a .jpg .jpeg or a .png');
-    //}
-  }
-  else
-      alert('File is not chosen!');
+  
+  saveImg(() => {
+    var file = document.getElementById('fileInput').files[0];
+    if($('#dummyInput').val())
+    {
+        //if(acceptables.indexOf(file.name.split('.').pop().toLowerCase()) > -1) {
+        document.getElementById('submitBtn').innerHTML = 'Uploading......';
+        $('#fileInput').remove();
+        document.getElementById('fileform').submit();
+        //} else {
+        //  alert('File must be a .jpg .jpeg or a .png');
+        //}
+    }
+    else
+        alert('File is not chosen!');
+  });
 }
 
 function showAdvanced() {
@@ -195,13 +195,33 @@ function chooseFile() {
 
 let darkroom = null;
 
-function saveImg() {
+function saveImg(cb) {
     if(darkroom) {
         const newImg = darkroom.canvas.toDataURL();
-        resetDarkroom();
-        $('#image').attr('src', newImg);
-        $('#dummyInput').val(newImg);
+        scale(newImg, scaled => {
+            resetDarkroom();
+            $('#image').attr('src', scaled);
+            $('#dummyInput').val(scaled);
+
+            cb()
+        })
     }
+}
+
+function scale(dataUrl, cb) {
+    const [width, height] = [299, 299];
+
+    const img = new Image();
+    img.src = dataUrl;
+    img.onload = () => {
+            const elem = document.createElement('canvas');
+            elem.width = width;
+            elem.height = height;
+            const ctx = elem.getContext('2d');
+
+            ctx.drawImage(img, 0, 0, width, height);
+            return cb(ctx.canvas.toDataURL('image/jpeg'))
+        }
 }
 
 function resetDarkroom() {

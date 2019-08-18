@@ -4,10 +4,11 @@
 
 
 <script>
+    var pollCount = 0;
+
     function loaded() {
         Array.prototype.forEach.call(document.getElementsByClassName('txt'), function (i) {
             i.className += ' invisible';
-            console.log(i);
         });
     }
 
@@ -18,6 +19,12 @@
     }
 
     function waitForResults() {
+        pollCount += 1;
+        if(pollCount > 50) {
+            $('#mainDiv').html('FAILED TO CLASSIFY! PLEASE TRY AGAIN')
+            return;
+        }
+
         $.ajax('/waiting/{{imgIndex}}', {
             dataType: 'json',
             success: function (res) {
@@ -70,6 +77,10 @@
                 }
 
 
+            },
+            failure: function() {
+                // If failed, we wait again
+                setTimeout(waitForResults, 500)
             }
         })
     }

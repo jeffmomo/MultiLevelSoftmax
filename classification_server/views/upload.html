@@ -73,6 +73,35 @@ document.getElementById("fileInput").onchange = function () {
     reader.readAsDataURL(this.files[0]);
 };
 
+function scale(file, cb) {
+    const [width, height] = [299, 299];
+
+    const fileName = file.name;
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = event => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+                const elem = document.createElement('canvas');
+                elem.width = width;
+                elem.height = height;
+                const ctx = elem.getContext('2d');
+                // img.width and img.height will contain the original dimensions
+                ctx.drawImage(img, 0, 0, width, height);
+                ctx.canvas.toBlob((blob) => {
+                    const scaledFile = new File([blob], fileName, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+
+                    cb(scaledFile)
+                }, 'image/jpeg', 1);
+            },
+            reader.onerror = error => console.log(error);
+    };
+}
+
 window.onload = function() {
     var input = document.getElementById('fileInput');
     if(input.files[0]) {
@@ -91,7 +120,11 @@ function doSubmit() {
   {
     if(acceptables.indexOf(file.name.split('.').pop().toLowerCase()) > -1) {
       document.getElementById('submitBtn').innerHTML = 'Uploading......';
-      document.getElementById('fileform').submit();
+
+      scale(file, scaledFile => {
+        document.getElementById('fileInput').files[0] = scaledFile;
+        document.getElementById('fileform').submit();
+      })
     } else {
       alert('File must be a .jpg .jpeg or a .png');
     }
