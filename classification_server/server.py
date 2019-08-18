@@ -20,13 +20,16 @@ _OVERLOAD_THRESHOLD = 20
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
+# Store done classifications that are awaiting poll
+ready_result: Dict[int, tuple] = {}
+request_metadata: Dict[int, tuple] = {}
+
 def fill(fillers: Dict[str, str], template: str):
     return reduce(
         lambda accum, k_v: accum.replace("{{" + k_v[0] + "}}", str(k_v[1])),
         fillers.items(),
         template,
     )
-
 
 def send_templated(template_path, fillers):
     with open(Path(__file__).parent / template_path) as f:
@@ -56,10 +59,6 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
     @app.route("/assets/<filename>")
     def send_assets(filename):
         return send_from_directory("3rdparty", filename)
-
-    # Store done classifications that are awaiting poll
-    ready_result: Dict[int, tuple] = {}
-    request_metadata: Dict[int, tuple] = {}
 
     @app.route("/waiting/<wait_on_index>")
     def wait_on_classification(wait_on_index):

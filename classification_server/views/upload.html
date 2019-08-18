@@ -45,7 +45,7 @@ body {
 <div align="center">
   <div class='title'>SPECIES CLASSIFIER (mobile) </div>
   <p> Note that the classifier takes a central square crop of the supplied image </p>
-  <form id='fileform' action="/classify-upload" method="post" enctype="multipart/form-data">
+  <form id='fileform'>
     
     <div style="height:0px;overflow:hidden">
       <input id="fileInput" type="file" name="example" accept="image/*">
@@ -122,8 +122,12 @@ function doSubmit() {
       document.getElementById('submitBtn').innerHTML = 'Uploading......';
 
       scale(file, scaledFile => {
-        document.getElementById('fileInput').files[0] = scaledFile;
-        document.getElementById('fileform').submit();
+        formData = FormData()
+        formData.append(scaledFile)
+
+        var request = new XMLHttpRequest();
+        request.open("POST", "/classify-upload");
+        request.send(formData);
       })
     } else {
       alert('File must be a .jpg .jpeg or a .png');
