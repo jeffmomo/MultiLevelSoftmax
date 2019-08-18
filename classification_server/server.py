@@ -6,6 +6,10 @@ from collections import namedtuple
 from functools import reduce
 from pathlib import Path
 from typing import Any, Dict
+import pickle
+import os
+import threading
+import logging
 
 from misc.utils import time_it
 from classification_server.saved_model_classifier import PredictionResult
@@ -13,6 +17,8 @@ from flask import Flask, jsonify, request, send_file, send_from_directory
 
 _OVERLOAD_THRESHOLD = 20
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 def fill(fillers: Dict[str, str], template: str):
     return reduce(
@@ -31,6 +37,17 @@ def send_templated(template_path, fillers):
 
 def _get_b64_from_dataurl(b64string):
     return b64string.split(",")[1]
+
+
+def schedule_garbage_collection(action, delay_seconds=20):
+    def gc():
+        time.sleep(delay_seconds)
+        try:
+            action()
+        except Exception:
+            logger.exception(f'Failed to remove during garbage collection')
+    
+    threading.Thread(target=gc).start()
 
 
 def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Queue, queue_size_counter: multiprocessing.Value):
@@ -53,6 +70,11 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
             result, hierarchy_json, clsf_index = from_classifier_queue.get_nowait()
 
             ready_result[clsf_index] = (result, hierarchy_json)
+
+            def cleanup():
+                del ready_result[clsf_index]
+
+            schedule_garbage_collection(cleanup, 5)
 
         except queue.Empty:
             pass
@@ -117,6 +139,10 @@ def create_app(to_classifier_queue: queue.Queue, from_classifier_queue: queue.Qu
 
         # Store some metadata here for this particular request ID
         request_metadata[image_id] = image_bytes, priors
+        def cleanup():
+            del request_metadata[image_id]
+        
+        schedule_garbage_collection(cleanup, 20)
 
         with queue_size_counter.get_lock():
             queue_size_counter.value += 1
